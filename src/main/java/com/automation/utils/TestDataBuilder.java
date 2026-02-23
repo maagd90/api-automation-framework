@@ -38,11 +38,7 @@ public class TestDataBuilder {
     }
 
     public static PostRequest buildPostFromTestData(String title, String body, int userId) {
-        return PostRequest.builder()
-                .title(title)
-                .body(body)
-                .userId(userId)
-                .build();
+        return buildPostRequest(title, body, userId);
     }
 
     public static List<Map<String, Object>> loadTestDataFromJson(String resourcePath) {

@@ -22,7 +22,6 @@ public class RestApiClient {
 
     public RestApiClient(String baseUrl) {
         ConfigurationManager config = ConfigurationManager.getInstance();
-        RestAssured.baseURI = baseUrl;
 
         this.requestSpec = new RequestSpecBuilder()
                 .setBaseUri(baseUrl)

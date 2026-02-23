@@ -44,9 +44,18 @@ public class ConfigurationManager {
         String envConfig = "config/application-" + env + ".properties";
         loadProperties(envConfig);
 
-        // Override with system properties
-        System.getProperties().forEach((key, value) ->
-                properties.setProperty(key.toString(), value.toString()));
+        // Override with system properties, but only allow known automation-related prefixes
+        // to prevent unintended configuration changes from arbitrary JVM properties.
+        final String[] ALLOWED_PREFIXES = {"api.", "graphql.", "automation.", "env"};
+        System.getProperties().forEach((key, value) -> {
+            String keyStr = key.toString();
+            for (String prefix : ALLOWED_PREFIXES) {
+                if (keyStr.equals(prefix) || keyStr.startsWith(prefix)) {
+                    properties.setProperty(keyStr, value.toString());
+                    break;
+                }
+            }
+        });
     }
 
     public String getProperty(String key) {

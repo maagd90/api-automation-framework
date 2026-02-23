@@ -47,9 +47,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
 
-      - name: Run REST API Tests
-        run: mvn test -Denv=${{ github.event.inputs.environment || 'dev' }} -Dgroups="REST API Testing"
-
       - name: Run All Tests
         run: mvn test -Denv=${{ github.event.inputs.environment || 'dev' }}
 
