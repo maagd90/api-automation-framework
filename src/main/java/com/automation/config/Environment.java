@@ -13,7 +13,7 @@ package com.automation.config;
  * System.out.println(env.getValue()); // "dev"
  * }</pre>
  *
- * @author automation-framework
+ * @author api-automation-framework
  * @version 1.0.0
  * @see ConfigurationManager
  */

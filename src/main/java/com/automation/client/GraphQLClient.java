@@ -28,7 +28,7 @@ import java.util.Map;
  * Response response = client.executeQuery(ROCKET_BY_ID_QUERY, vars);
  * }</pre>
  *
- * @author automation-framework
+ * @author api-automation-framework
  * @version 1.0.0
  * @see RestApiClient
  * @see ConfigurationManager

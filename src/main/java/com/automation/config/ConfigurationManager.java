@@ -29,7 +29,7 @@ import java.util.Properties;
  * int    timeout  = config.getConnectionTimeout();
  * }</pre>
  *
- * @author automation-framework
+ * @author api-automation-framework
  * @version 1.0.0
  * @see Environment
  */

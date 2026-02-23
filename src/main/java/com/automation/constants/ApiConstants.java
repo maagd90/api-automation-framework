@@ -15,7 +15,7 @@ package com.automation.constants;
  * assertStatusCode(response, ApiConstants.STATUS_OK);
  * }</pre>
  *
- * @author automation-framework
+ * @author api-automation-framework
  * @version 1.0.0
  * @see GraphQLConstants
  */

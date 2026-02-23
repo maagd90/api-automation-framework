@@ -38,7 +38,7 @@ import java.util.Map;
  * Response created = client.post("/posts", body);
  * }</pre>
  *
- * @author automation-framework
+ * @author api-automation-framework
  * @version 1.0.0
  * @see GraphQLClient
  * @see ConfigurationManager
