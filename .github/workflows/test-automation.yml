@@ -49,11 +49,9 @@ jobs:
 
       - name: Run REST API Tests
         run: mvn test -Denv=${{ github.event.inputs.environment || 'dev' }} -Dgroups="REST API Testing"
-        continue-on-error: true
 
       - name: Run All Tests
         run: mvn test -Denv=${{ github.event.inputs.environment || 'dev' }}
-        continue-on-error: true
 
       - name: Generate Allure Report
         run: mvn allure:report
