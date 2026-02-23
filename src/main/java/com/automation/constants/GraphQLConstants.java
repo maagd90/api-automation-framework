@@ -13,7 +13,7 @@ package com.automation.constants;
  * }</pre>
  *
  * @see com.automation.client.GraphQLClient
- * @see com.automation.api.tests.SpaceXTests
+ * @see com.automation.graphql.tests.SpaceXTests
  */
 public final class GraphQLConstants {
 
