@@ -1,3 +1,13 @@
+target/
+*.class
+*.jar
+*.war
+*.ear
+.settings/
+.project
+.classpath
+.idea/
+*.iml
 # Compiled class files
 *.class
 
