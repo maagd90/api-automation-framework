@@ -1,0 +1,17 @@
+target/
+*.class
+*.jar
+*.war
+*.ear
+.idea/
+*.iml
+.eclipse/
+.classpath
+.project
+.settings/
+allure-results/
+allure-report/
+logs/
+*.log
+.DS_Store
+Thumbs.db
