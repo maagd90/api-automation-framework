@@ -60,7 +60,7 @@ public class SpaceXTests {
      */
     @BeforeClass
     public void setUp() {
-        graphQLClient = new GraphQLClient(GraphQLConstants.SPACEX_GRAPHQL_URL);
+        graphQLClient = new GraphQLClient();
         logger.info("SpaceXTests setup complete");
     }
 

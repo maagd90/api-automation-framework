@@ -33,7 +33,7 @@ public final class GraphQLConstants {
     // -----------------------------------------------------------------------
 
     /** Base URL of the SpaceX public GraphQL API used for testing. */
-    public static final String SPACEX_GRAPHQL_URL = "https://spacex-production.up.railway.app/";
+    public static final String SPACEX_GRAPHQL_URL = ConfigurationManager.getInstance().getGraphQLUrl();
 
     // -----------------------------------------------------------------------
     // GraphQL Queries

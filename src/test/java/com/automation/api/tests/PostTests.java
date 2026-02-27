@@ -68,7 +68,7 @@ public class PostTests {
      */
     @BeforeClass
     public void setUp() {
-        client = new RestApiClient(ApiConstants.JSONPLACEHOLDER_BASE_URL);
+        client = new RestApiClient();
         logger.info("PostTests setup complete");
     }
 
