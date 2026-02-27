@@ -1,0 +1,40 @@
+[
+  {
+    "title": "Introduction to REST API Testing",
+    "body": "REST API testing is crucial for ensuring API reliability and performance",
+    "userId": 1
+  },
+  {
+    "title": "GraphQL vs REST",
+    "body": "GraphQL provides a more flexible query language compared to REST APIs",
+    "userId": 2
+  },
+  {
+    "title": "Test Automation Best Practices",
+    "body": "Implementing proper test automation reduces manual testing effort significantly",
+    "userId": 3
+  },
+  {
+    "title": "CI/CD Integration for API Tests",
+    "body": "Integrating API tests in CI/CD pipelines ensures continuous quality validation",
+    "userId": 1
+  },
+  {
+    "title": "Error Handling in API Tests",
+    "body": "Proper error handling in API tests helps identify and debug issues quickly",
+    "userId": 2
+    "title": "Test Post 1",
+    "body": "This is the body of test post 1",
+    "userId": 1
+  },
+  {
+    "title": "Test Post 2",
+    "body": "This is the body of test post 2",
+    "userId": 2
+  },
+  {
+    "title": "Test Post 3",
+    "body": "This is the body of test post 3",
+    "userId": 3
+  }
+]
