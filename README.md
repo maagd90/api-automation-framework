@@ -1,232 +1,46 @@
-# API Automation Framework
+# api-automation-framework
 
-A professional-grade test automation framework for REST API and GraphQL testing built with Java, REST-Assured, TestNG, and Maven.
+## Pull Request Merge Order
 
-## Features
+There are three open pull requests targeting `main`. All three branch from the same base commit, so
+only one can be merged cleanly; the remaining two will require a rebase before they can land.
 
-- **REST API Testing** - Comprehensive CRUD test cases using JSONPlaceholder API
-- **GraphQL Testing** - Query and mutation tests against SpaceX GraphQL API
-- **Fluent Assertions** - Custom assertion utilities and response validators
-- **Allure Reports** - Rich HTML test reports with detailed execution information
-- **Log4j2 Logging** - Configurable logging with daily file rotation
-- **Data-Driven Tests** - Parameterized tests with JSON test data
-- **CI/CD Integration** - GitHub Actions workflow for automated test execution
-- **Multi-Environment** - Maven profiles for dev, staging, and production environments
+### Recommended merge order
 
-## Technology Stack
+**Merge PR #1 first.**
 
-| Technology | Version | Purpose |
-|---|---|---|
-| Java | 17 | Programming language |
-| Maven | 3.9+ | Build and dependency management |
-| REST-Assured | 5.3.2 | REST API testing |
-| TestNG | 7.8.0 | Test framework |
-| Log4j2 | 2.20.0 | Logging framework |
-| Allure | 2.21.0 | Test reporting |
-| Jackson | 2.15.2 | JSON processing |
-| Lombok | 1.18.28 | Boilerplate reduction |
+| # | PR | Branch | Status | Why |
+|---|-----|--------|--------|-----|
+| 1 | [#1 – Create professional-grade API automation framework with security hardening](https://github.com/maagd90/api-automation-framework/pull/1) | `copilot/create-automation-framework` | Open (ready) | Foundation PR — merge this first |
+| 2 | [#2 – Add comprehensive JavaDoc to all framework classes](https://github.com/maagd90/api-automation-framework/pull/2) | `copilot/add-javadoc-documentation-framework-classes` | Open (ready) | Rebase on `main` after PR #1 lands, then merge |
+| 3 | [#3 – Complete REST API & GraphQL automation framework with comprehensive JavaDoc](https://github.com/maagd90/api-automation-framework/pull/3) | `copilot/complete-java-docs-and-files` | **Draft** | Still in progress — rebase and complete after PR #1 |
 
-## Project Structure
+### Why PR #1 should land first
 
-```
-src/
-├── main/java/com/automation/
-│   ├── client/
-│   │   ├── RestApiClient.java       # REST API client with fluent builder
-│   │   └── GraphQLClient.java       # GraphQL client for queries/mutations
-│   ├── config/
-│   │   ├── ConfigurationManager.java # Singleton config loader
-│   │   └── Environment.java          # Environment enum
-│   ├── models/
-│   │   ├── request/
-│   │   │   └── PostRequest.java
-│   │   └── response/
-│   │       ├── PostResponse.java
-│   │       └── UserResponse.java
-│   ├── utils/
-│   │   ├── AssertionUtils.java       # Custom API assertions
-│   │   ├── ResponseValidator.java    # Fluent response validator
-│   │   └── TestDataBuilder.java      # Test data factory
-│   ├── constants/
-│   │   ├── ApiConstants.java         # REST API constants
-│   │   └── GraphQLConstants.java     # GraphQL queries and constants
-│   └── listeners/
-│       └── TestListener.java         # TestNG lifecycle listener
-└── test/
-    ├── java/com/automation/
-    │   ├── api/tests/
-    │   │   ├── PostTests.java        # CRUD tests for Posts
-    │   │   └── UserTests.java        # Tests for Users
-    │   └── graphql/tests/
-    │       └── SpaceXTests.java      # SpaceX GraphQL tests
-    └── resources/
-        ├── config/
-        │   ├── application.properties
-        │   └── log4j2.xml
-        ├── testdata/
-        │   └── test-data.json
-        ├── allure/
-        │   └── allure.properties
-        └── testng.xml
-```
+1. **Foundational** – PR #1 creates the entire framework from an empty repository (2,040 lines
+   across 25 files). PRs #2 and #3 add documentation and missing files on top of that base, so
+   they logically depend on it.
 
-## Prerequisites
+2. **Earliest creation date** – PR #1 was opened first (2026-02-23 01:54 UTC), reflecting the
+   natural development sequence: _create_ → _document_ → _complete_.
 
-- Java 17 or higher
-- Maven 3.9+
-- Internet access (for external API calls)
+3. **Security hardening included** – PR #1 ships several fixes that the other PRs do not:
+   - Bumps `assertj-core` from `3.24.2` → `3.27.7` to patch an XXE injection vulnerability.
+   - Removes the external DTD declaration from `testng.xml`, eliminating the XML parser XXE
+     attack surface.
+   - Restricts `ConfigurationManager` system-property overrides to allowed prefixes only,
+     preventing arbitrary JVM properties from polluting the configuration.
+   - Moves `RestAssured.baseURI` to a per-instance `RequestSpecification`, removing a race
+     condition under parallel test execution.
 
-## Setup
+4. **Production-ready CI/CD** – PR #1 uses the latest GitHub Actions versions (`@v4`) and
+   includes a Maven dependency cache and a test-result summary step that PRs #2 and #3 lack.
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/maagd90/api-automation-framework.git
-   cd api-automation-framework
-   ```
+5. **Not a draft** – PR #3 is still marked as a draft; PR #1 is fully ready for review and merge.
 
-2. **Install dependencies**
-   ```bash
-   mvn install -DskipTests
-   ```
+### Steps after merging PR #1
 
-## Running Tests
-
-### Run all tests
-```bash
-mvn test
-```
-
-### Run with a specific environment
-```bash
-mvn test -Pdev
-mvn test -Pstaging
-mvn test -Pprod
-```
-
-### Run only REST API tests
-```bash
-mvn test -Dgroups="REST API Testing"
-```
-
-### Run only GraphQL tests
-```bash
-mvn test -Dgroups="GraphQL Testing"
-```
-
-### Generate Allure report
-```bash
-mvn allure:serve
-```
-
-## Test Cases
-
-### REST API Tests (JSONPlaceholder)
-
-| Test | Description |
-|------|-------------|
-| `testCreatePost` | Creates a post and verifies 201 status |
-| `testGetPostById` | Reads post by ID and validates structure |
-| `testUpdatePost` | Updates post with PUT and verifies changes |
-| `testPatchPost` | Partially updates post with PATCH |
-| `testDeletePost` | Deletes a post and verifies success |
-| `testGetAllPosts` | Retrieves all posts, verifies count = 100 |
-| `testGetPostsByUserId` | Filters posts by userId |
-| `testGetNonExistentPost` | Verifies 404 for missing resource |
-| `testCreatePostDataDriven` | Data-driven create with 3 datasets |
-| `testResponseTime` | Verifies response time < 10 seconds |
-| `testGetAllUsers` | Gets all 10 users |
-| `testGetUserById` | Gets user by ID, validates fields |
-| `testUserResponseStructure` | Validates full user JSON structure |
-| `testGetUserPosts` | Gets posts for a specific user |
-| `testUsersHaveValidEmails` | Validates email format for all users |
-
-### GraphQL Tests (SpaceX API)
-
-| Test | Description |
-|------|-------------|
-| `testQueryRockets` | Queries all rockets, validates structure |
-| `testQueryLaunches` | Queries past 5 launches |
-| `testQueryRocketWithVariables` | Queries rocket by ID using variables |
-| `testQueryCompanyInfo` | Queries SpaceX company information |
-| `testInvalidQueryReturnsErrors` | Verifies error handling for invalid query |
-| `testRocketResponseStructure` | Validates rocket response fields |
-
-## Writing New Tests
-
-### REST API Test Example
-
-```java
-@Test
-@Story("My Feature")
-@Description("Describe what this test validates")
-public void testMyFeature() {
-    RestApiClient client = new RestApiClient();
-    Response response = client.get("/my-endpoint");
-
-    ResponseValidator.of(response)
-        .statusCode(200)
-        .fieldNotNull("id")
-        .fieldEquals("status", "active")
-        .responseTimeBelow(5000);
-}
-```
-
-### GraphQL Test Example
-
-```java
-@Test
-public void testMyGraphQLQuery() {
-    GraphQLClient client = new GraphQLClient();
-    String query = "{ myQuery { id name } }";
-
-    Response response = client.executeQuery(query);
-
-    ResponseValidator.of(response)
-        .statusCode(200)
-        .noGraphQLErrors()
-        .graphQLDataNotNull("myQuery");
-}
-```
-
-### Data-Driven Test Example
-
-```java
-@Test(dataProvider = "myDataProvider")
-public void testWithData(String title, String body, int userId) {
-    PostRequest request = TestDataBuilder.buildPostRequest(title, body, userId);
-    Response response = client.post("/posts", request);
-    AssertionUtils.assertStatusCode(response, 201);
-}
-
-@DataProvider(name = "myDataProvider")
-public Object[][] myDataProvider() {
-    return new Object[][] {
-        {"Title 1", "Body 1", 1},
-        {"Title 2", "Body 2", 2}
-    };
-}
-```
-
-## Configuration
-
-Edit `src/test/resources/config/application.properties`:
-
-```properties
-api.base.url=https://jsonplaceholder.typicode.com
-graphql.base.url=https://spacex-production.up.railway.app/
-api.connection.timeout=5000
-api.read.timeout=10000
-api.max.retries=3
-```
-
-## CI/CD
-
-The GitHub Actions workflow (`.github/workflows/test-automation.yml`) runs on:
-- Push to `main` or `develop` branches
-- Pull requests to `main`
-- Manual trigger with environment selection
-
-Artifacts produced:
-- Surefire test reports
-- Allure results and HTML report
-- Application logs
+1. Rebase `copilot/add-javadoc-documentation-framework-classes` onto the updated `main` and
+   resolve any conflicts, then merge PR #2 to add comprehensive JavaDoc.
+2. Rebase `copilot/complete-java-docs-and-files` onto `main`, mark it ready for review, resolve
+   conflicts, and merge PR #3 to bring in any remaining model classes, utilities, and resources.
