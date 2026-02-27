@@ -23,6 +23,28 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Test class covering GraphQL queries against the SpaceX public GraphQL API.
+ *
+ * <p>All tests in this class use {@link GraphQLClient} pointing at
+ * {@link GraphQLConstants#SPACEX_GRAPHQL_URL} and validate responses with
+ * {@link ResponseValidator} and {@link AssertionUtils}.</p>
+ *
+ * <p>The tests are organised into the following Allure stories:</p>
+ * <ul>
+ *   <li><b>Query Rockets</b> – verifies that the rockets query returns valid data.</li>
+ *   <li><b>Query Launches</b> – verifies that the past-launches query returns valid data.</li>
+ *   <li><b>Query with Variables</b> – verifies parameterised query execution.</li>
+ *   <li><b>Company Info Query</b> – verifies the company-info query.</li>
+ *   <li><b>Error Handling</b> – verifies that an invalid query returns errors.</li>
+ *   <li><b>Response Structure</b> – verifies mandatory fields on the rocket objects.</li>
+ * </ul>
+ *
+ * @author api-automation-framework
+ * @version 1.0.0
+ * @see GraphQLClient
+ * @see GraphQLConstants
+ */
 @Epic("GraphQL Testing")
 @Feature("SpaceX API")
 @Listeners(TestListener.class)
@@ -31,12 +53,22 @@ public class SpaceXTests {
     private static final Logger logger = LogManager.getLogger(SpaceXTests.class);
     private GraphQLClient graphQLClient;
 
+    /**
+     * Initialises the {@link GraphQLClient} before any test in this class runs.
+     *
+     * <p>The client is pointed at {@link GraphQLConstants#SPACEX_GRAPHQL_URL}.</p>
+     */
     @BeforeClass
     public void setUp() {
         graphQLClient = new GraphQLClient(GraphQLConstants.SPACEX_GRAPHQL_URL);
         logger.info("SpaceXTests setup complete");
     }
 
+    /**
+     * Verifies that the {@link GraphQLConstants#ROCKETS_QUERY} returns HTTP 200,
+     * no GraphQL errors, and a non-empty list of rockets where every entry has an
+     * {@code id} and a {@code name}.
+     */
     @Test
     @Story("Query Rockets")
     @Description("Verify that querying rockets returns valid data")
@@ -61,6 +93,11 @@ public class SpaceXTests {
         logger.info("Retrieved {} rockets", rockets.size());
     }
 
+    /**
+     * Verifies that the {@link GraphQLConstants#LAUNCHES_QUERY} returns HTTP 200,
+     * no GraphQL errors, and a non-empty list of launches where every entry has an
+     * {@code id} and a {@code mission_name}.
+     */
     @Test
     @Story("Query Launches")
     @Description("Verify that querying past launches returns valid data")
@@ -85,12 +122,19 @@ public class SpaceXTests {
         logger.info("Retrieved {} past launches", launches.size());
     }
 
+    /**
+     * Verifies that the {@link GraphQLConstants#ROCKET_BY_ID_QUERY} can be executed
+     * with a variable-bound rocket ID, and that the returned rocket's {@code id}
+     * matches the requested value.
+     *
+     * <p>The test first fetches all rockets to obtain a valid ID, then queries that
+     * specific rocket and compares the returned ID.</p>
+     */
     @Test
     @Story("Query with Variables")
     @Description("Verify that querying rocket by ID with variables works correctly")
     @Severity(SeverityLevel.NORMAL)
     public void testQueryRocketWithVariables() {
-        // First get a valid rocket ID
         Response rocketsResponse = graphQLClient.executeQuery(GraphQLConstants.ROCKETS_QUERY);
         List<Map<String, Object>> rockets = rocketsResponse.jsonPath().getList("data.rockets");
         Assert.assertFalse(rockets == null || rockets.isEmpty(), "Need rockets to test");
@@ -113,6 +157,10 @@ public class SpaceXTests {
         logger.info("Successfully retrieved rocket: {}", response.jsonPath().getString("data.rocket.name"));
     }
 
+    /**
+     * Verifies that the {@link GraphQLConstants#COMPANY_INFO_QUERY} returns HTTP 200,
+     * no GraphQL errors, and a non-null, non-empty company name.
+     */
     @Test
     @Story("Company Info Query")
     @Description("Verify that querying company information returns valid data")
@@ -131,6 +179,11 @@ public class SpaceXTests {
         logger.info("Company name: {}", companyName);
     }
 
+    /**
+     * Verifies that executing the intentionally malformed
+     * {@link GraphQLConstants#INVALID_QUERY} returns HTTP 400 and a response body
+     * that contains a GraphQL {@code errors} array.
+     */
     @Test
     @Story("Error Handling")
     @Description("Verify that invalid GraphQL queries return appropriate errors")
@@ -144,6 +197,11 @@ public class SpaceXTests {
         logger.info("Invalid query correctly returned errors");
     }
 
+    /**
+     * Verifies that each rocket object returned by the
+     * {@link GraphQLConstants#ROCKETS_QUERY} contains the mandatory fields
+     * {@code id}, {@code name}, {@code country}, and {@code company}.
+     */
     @Test
     @Story("Response Structure")
     @Description("Verify rockets response has expected fields")

@@ -23,6 +23,29 @@ import org.testng.annotations.Test;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Test class covering read operations and validations for the JSONPlaceholder
+ * {@code /users} REST API endpoint.
+ *
+ * <p>All tests use {@link RestApiClient} pointed at
+ * {@link ApiConstants#JSONPLACEHOLDER_BASE_URL} and validate responses with
+ * {@link ResponseValidator} and {@link AssertionUtils}.</p>
+ *
+ * <p>The tests are organised into the following Allure stories:</p>
+ * <ul>
+ *   <li><b>Get All Users</b> – verifies the full collection and response time.</li>
+ *   <li><b>Get User By ID</b> – verifies a single-user response and data mapping.</li>
+ *   <li><b>User Response Structure</b> – verifies all mandatory fields are present.</li>
+ *   <li><b>User Posts</b> – verifies that cross-resource filtering works correctly.</li>
+ *   <li><b>Error Handling</b> – verifies HTTP 404 for a non-existent user.</li>
+ *   <li><b>User Email Validation</b> – verifies that every user has a valid email.</li>
+ * </ul>
+ *
+ * @author api-automation-framework
+ * @version 1.0.0
+ * @see RestApiClient
+ * @see UserResponse
+ */
 @Epic("REST API Testing")
 @Feature("Users API")
 @Listeners(TestListener.class)
@@ -31,12 +54,21 @@ public class UserTests {
     private static final Logger logger = LogManager.getLogger(UserTests.class);
     private RestApiClient client;
 
+    /**
+     * Initialises the {@link RestApiClient} before any test in this class runs.
+     *
+     * <p>The client is pointed at {@link ApiConstants#JSONPLACEHOLDER_BASE_URL}.</p>
+     */
     @BeforeClass
     public void setUp() {
         client = new RestApiClient(ApiConstants.JSONPLACEHOLDER_BASE_URL);
         logger.info("UserTests setup complete");
     }
 
+    /**
+     * Verifies that {@code GET /users} returns HTTP 200 with exactly
+     * {@link ApiConstants#TOTAL_USERS} user records within 5 seconds.
+     */
     @Test
     @Story("Get All Users")
     @Description("Verify that getting all users returns correct count")
@@ -52,6 +84,10 @@ public class UserTests {
         logger.info("Retrieved {} users", ApiConstants.TOTAL_USERS);
     }
 
+    /**
+     * Verifies that {@code GET /users/1} returns HTTP 200 with the correct user data
+     * and that the response can be deserialised into a {@link UserResponse}.
+     */
     @Test
     @Story("Get User By ID")
     @Description("Verify that getting a user by ID returns correct user data")
@@ -74,6 +110,11 @@ public class UserTests {
         logger.info("Retrieved user: {} ({})", user.getName(), user.getEmail());
     }
 
+    /**
+     * Verifies that the {@code GET /users/1} response contains all mandatory top-level
+     * fields including the nested {@code address} and {@code company} objects,
+     * and that the Content-Type is JSON.
+     */
     @Test
     @Story("User Response Structure")
     @Description("Verify that user response has all required fields")
@@ -95,6 +136,10 @@ public class UserTests {
         AssertionUtils.assertContentType(response, "application/json");
     }
 
+    /**
+     * Verifies that {@code GET /posts?userId=1} returns HTTP 200 with a non-empty list,
+     * confirming that cross-resource filtering by user ID works correctly.
+     */
     @Test
     @Story("User Posts")
     @Description("Verify that getting posts for a user returns non-empty list")
@@ -113,6 +158,9 @@ public class UserTests {
         logger.info("User {} has {} posts", userId, posts.size());
     }
 
+    /**
+     * Verifies that requesting a user with an ID that does not exist returns HTTP 404.
+     */
     @Test
     @Story("Error Handling")
     @Description("Verify 404 for non-existent user")
@@ -122,6 +170,10 @@ public class UserTests {
         AssertionUtils.assertStatusCode(response, ApiConstants.STATUS_NOT_FOUND);
     }
 
+    /**
+     * Verifies that every user in the {@code GET /users} response has a non-null
+     * email address that contains the {@code @} character.
+     */
     @Test
     @Story("User Email Validation")
     @Description("Verify all users have valid email format")

@@ -1,28 +1,17 @@
-# Maven
 target/
 *.class
 *.jar
 *.war
 *.ear
-
-# IDE
 .idea/
 *.iml
 .eclipse/
-.settings/
-.project
 .classpath
-*.iws
-*.ipr
-
-# Logs
-*.log
-logs/
-
-# Test reports
+.project
+.settings/
 allure-results/
 allure-report/
-
-# OS
+logs/
+*.log
 .DS_Store
 Thumbs.db
