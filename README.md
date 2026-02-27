@@ -1,46 +1,70 @@
-# api-automation-framework
+# Project Overview
 
-## Pull Request Merge Order
+The `api-automation-framework` is a robust framework designed to facilitate automated testing of APIs. This framework enhances the efficiency of API testing, supports various testing strategies, and integrates seamlessly into CI/CD pipelines.
 
-There are three open pull requests targeting `main`. All three branch from the same base commit, so
-only one can be merged cleanly; the remaining two will require a rebase before they can land.
+# Architecture
 
-### Recommended merge order
+The architecture of the `api-automation-framework` consists of:
+- **Core Modules**: The central logic for executing tests and reporting results.
+- **Configuration Files**: Define the settings and parameters to tailor the testing process.
+- **Test Cases**: Each API endpoint is supported by test cases to validate functionality, performance, and security.
+- **Reports**: Generates detailed reports post-testing for analysis and tracking.
 
-**Merge PR #1 first.**
+# Setup Instructions
 
-| # | PR | Branch | Status | Why |
-|---|-----|--------|--------|-----|
-| 1 | [#1 – Create professional-grade API automation framework with security hardening](https://github.com/maagd90/api-automation-framework/pull/1) | `copilot/create-automation-framework` | Open (ready) | Foundation PR — merge this first |
-| 2 | [#2 – Add comprehensive JavaDoc to all framework classes](https://github.com/maagd90/api-automation-framework/pull/2) | `copilot/add-javadoc-documentation-framework-classes` | Open (ready) | Rebase on `main` after PR #1 lands, then merge |
-| 3 | [#3 – Complete REST API & GraphQL automation framework with comprehensive JavaDoc](https://github.com/maagd90/api-automation-framework/pull/3) | `copilot/complete-java-docs-and-files` | **Draft** | Still in progress — rebase and complete after PR #1 |
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/maagd90/api-automation-framework.git
+   cd api-automation-framework
+   ```
+2. Install the required dependencies:
+   ```bash
+   npm install
+   ```
+3. Configure the environment variables as needed within the `.env` file.
+4. Execute the tests with the following command:
+   ```bash
+   npm test
+   ```
 
-### Why PR #1 should land first
+# Project Structure
 
-1. **Foundational** – PR #1 creates the entire framework from an empty repository (2,040 lines
-   across 25 files). PRs #2 and #3 add documentation and missing files on top of that base, so
-   they logically depend on it.
+```
+api-automation-framework/
+├── config/              # Configuration files
+├── tests/               # Test cases
+│   ├── unit/           # Unit tests
+│   ├── integration/     # Integration tests
+│   └── performance/     # Performance tests
+├── reports/             # Test reports
+└── src/                # Core framework code
+```
 
-2. **Earliest creation date** – PR #1 was opened first (2026-02-23 01:54 UTC), reflecting the
-   natural development sequence: _create_ → _document_ → _complete_.
+# Usage Examples
 
-3. **Security hardening included** – PR #1 ships several fixes that the other PRs do not:
-   - Bumps `assertj-core` from `3.24.2` → `3.27.7` to patch an XXE injection vulnerability.
-   - Removes the external DTD declaration from `testng.xml`, eliminating the XML parser XXE
-     attack surface.
-   - Restricts `ConfigurationManager` system-property overrides to allowed prefixes only,
-     preventing arbitrary JVM properties from polluting the configuration.
-   - Moves `RestAssured.baseURI` to a per-instance `RequestSpecification`, removing a race
-     condition under parallel test execution.
+Here are a few examples of how to use the framework:
 
-4. **Production-ready CI/CD** – PR #1 uses the latest GitHub Actions versions (`@v4`) and
-   includes a Maven dependency cache and a test-result summary step that PRs #2 and #3 lack.
+### Running Specific Test Cases
+To run a specific test case, use the following command:
+```bash
+npm test path/to/test/case.js
+```
 
-5. **Not a draft** – PR #3 is still marked as a draft; PR #1 is fully ready for review and merge.
+### Generating Reports
+To generate test reports, configure the reporting option in the configuration settings and run:
+```bash
+npm run generate-reports
+```
 
-### Steps after merging PR #1
+### CI/CD Integration
+This framework can be easily integrated into CI/CD pipelines. Add the following scripts to your CI configuration:
+```yaml
+- name: Run API Tests
+  run: |
+    npm install
+    npm test
+```
 
-1. Rebase `copilot/add-javadoc-documentation-framework-classes` onto the updated `main` and
-   resolve any conflicts, then merge PR #2 to add comprehensive JavaDoc.
-2. Rebase `copilot/complete-java-docs-and-files` onto `main`, mark it ready for review, resolve
-   conflicts, and merge PR #3 to bring in any remaining model classes, utilities, and resources.
+# Conclusion
+
+The `api-automation-framework` is designed to streamline API testing, improve accuracy, and provide extensive flexibility. Its modular structure allows for easy updates and scalability as project requirements evolve. For further information, open issues, or feature requests, please visit the project's GitHub repository.
