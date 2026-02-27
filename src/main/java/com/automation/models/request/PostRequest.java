@@ -7,23 +7,25 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Request model for creating or updating a Post via the JSONPlaceholder API.
+ * Request POJO representing the body of a <em>create/update post</em> REST API call.
  *
- * <p>Fields with {@code null} values are excluded from the serialised JSON payload
- * (courtesy of {@link JsonInclude#NON_NULL}), which makes the same class usable for
- * both full POST/PUT requests and partial PATCH requests.
+ * <p>This model maps to the JSON payload expected by the JSONPlaceholder
+ * {@code POST /posts} and {@code PUT /posts/{id}} endpoints. Fields that are
+ * {@code null} are excluded from the serialised JSON (via
+ * {@link JsonInclude#NON_NULL}) so that partial-update scenarios are supported
+ * without sending explicit {@code null} values.</p>
  *
- * <p>Example usage:
+ * <p>Instances are normally created via the Lombok-generated builder:</p>
  * <pre>{@code
- * PostRequest post = PostRequest.builder()
- *         .userId(1)
+ * PostRequest request = PostRequest.builder()
  *         .title("My Title")
- *         .body("Post body content.")
+ *         .body("Post body content")
+ *         .userId(1)
  *         .build();
- *
- * Response response = client.post(ApiConstants.POSTS_ENDPOINT, post);
  * }</pre>
  *
+ * @author api-automation-framework
+ * @version 1.0.0
  * @see com.automation.models.response.PostResponse
  * @see com.automation.utils.TestDataBuilder
  */
@@ -35,19 +37,24 @@ import lombok.NoArgsConstructor;
 public class PostRequest {
 
     /**
-     * The identifier of the user who authors this post.
-     * Must be a positive integer referencing a valid user in the system.
-     */
-    private Integer userId;
-
-    /**
-     * The headline / title of the post.
-     * Should be a concise, non-empty string.
+     * The title of the post.
+     *
+     * <p>Must not be blank for a valid create/update request.</p>
      */
     private String title;
 
     /**
-     * The main text content of the post.
+     * The body (main content) of the post.
+     *
+     * <p>Must not be blank for a valid create/update request.</p>
      */
     private String body;
+
+    /**
+     * The ID of the user who owns this post.
+     *
+     * <p>Must reference a valid user ID in the target system (1–10 for
+     * JSONPlaceholder).</p>
+     */
+    private Integer userId;
 }

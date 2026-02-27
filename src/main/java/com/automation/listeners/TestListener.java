@@ -8,23 +8,35 @@ import org.testng.ITestListener;
 import org.testng.ITestResult;
 
 /**
- * TestNG lifecycle listener that logs test events and enriches Allure reports.
+ * TestNG listener that integrates structured logging and Allure reporting into the
+ * test lifecycle.
  *
- * <p>Register this listener in {@code testng.xml} or via the {@code @Listeners} annotation:
+ * <p>This listener is registered on test classes via the TestNG
+ * {@code @Listeners(TestListener.class)} annotation. It hooks into the following
+ * lifecycle events:</p>
+ * <ul>
+ *   <li>{@link #onStart(ITestContext)} – logs when a test suite begins.</li>
+ *   <li>{@link #onFinish(ITestContext)} – logs a pass/fail/skip summary when a suite ends.</li>
+ *   <li>{@link #onTestStart(ITestResult)} – logs the start of each individual test and
+ *       attaches a description to the Allure report.</li>
+ *   <li>{@link #onTestSuccess(ITestResult)} – logs a ✓ PASSED line with elapsed time.</li>
+ *   <li>{@link #onTestFailure(ITestResult)} – logs a ✗ FAILED line with the error message
+ *       and (at DEBUG level) the full stack trace.</li>
+ *   <li>{@link #onTestSkipped(ITestResult)} – logs a ⊘ SKIPPED line.</li>
+ *   <li>{@link #onTestFailedButWithinSuccessPercentage(ITestResult)} – logs a warning for
+ *       tests that failed but remained within an acceptable success percentage.</li>
+ * </ul>
+ *
+ * <p>Usage example (on a test class):</p>
  * <pre>{@code
- * // testng.xml
- * <listeners>
- *   <listener class-name="com.automation.listeners.TestListener"/>
- * </listeners>
- *
- * // Or per-class
  * @Listeners(TestListener.class)
- * public class MyTests { ... }
+ * public class PostTests {
+ *     // ...
+ * }
  * }</pre>
  *
- * <p>The listener produces structured log output for each test phase and updates the
- * Allure step description at test start.
- *
+ * @author api-automation-framework
+ * @version 1.0.0
  * @see org.testng.ITestListener
  */
 public class TestListener implements ITestListener {
@@ -32,9 +44,11 @@ public class TestListener implements ITestListener {
     private static final Logger logger = LogManager.getLogger(TestListener.class);
 
     /**
-     * Called when the test suite starts.
+     * Called before any test in the suite runs.
      *
-     * @param context the suite execution context
+     * <p>Logs the suite name at INFO level.</p>
+     *
+     * @param context the TestNG context for the suite that is starting (never {@code null})
      */
     @Override
     public void onStart(ITestContext context) {
@@ -42,9 +56,11 @@ public class TestListener implements ITestListener {
     }
 
     /**
-     * Called when the test suite finishes. Logs the pass / fail / skip counts.
+     * Called after all tests in the suite have finished.
      *
-     * @param context the suite execution context
+     * <p>Logs a summary line containing the counts of passed, failed, and skipped tests.</p>
+     *
+     * @param context the TestNG context for the suite that has finished (never {@code null})
      */
     @Override
     public void onFinish(ITestContext context) {
@@ -56,10 +72,12 @@ public class TestListener implements ITestListener {
     }
 
     /**
-     * Called immediately before a test method is invoked. Adds the test name to the
-     * Allure report description.
+     * Called immediately before each test method executes.
      *
-     * @param result metadata about the test that is about to run
+     * <p>Logs the test name at INFO level and attaches the test name as an Allure
+     * description for richer report output.</p>
+     *
+     * @param result the result object for the test that is about to start (never {@code null})
      */
     @Override
     public void onTestStart(ITestResult result) {
@@ -68,9 +86,11 @@ public class TestListener implements ITestListener {
     }
 
     /**
-     * Called when a test method passes. Logs the execution time.
+     * Called when a test method completes successfully.
      *
-     * @param result metadata about the test that has just passed
+     * <p>Logs a ✓ PASSED line including the elapsed time in milliseconds.</p>
+     *
+     * @param result the result object for the test that passed (never {@code null})
      */
     @Override
     public void onTestSuccess(ITestResult result) {
@@ -78,10 +98,12 @@ public class TestListener implements ITestListener {
     }
 
     /**
-     * Called when a test method fails. Logs the failure message and, at DEBUG level, the
-     * full stack trace.
+     * Called when a test method fails.
      *
-     * @param result metadata about the test that has just failed
+     * <p>Logs a ✗ FAILED line with the exception message at ERROR level.
+     * The full stack trace is logged at DEBUG level if a throwable is attached.</p>
+     *
+     * @param result the result object for the test that failed (never {@code null})
      */
     @Override
     public void onTestFailure(ITestResult result) {
@@ -95,7 +117,9 @@ public class TestListener implements ITestListener {
     /**
      * Called when a test method is skipped (e.g. due to a failed dependency).
      *
-     * @param result metadata about the test that was skipped
+     * <p>Logs a ⊘ SKIPPED line at WARN level.</p>
+     *
+     * @param result the result object for the test that was skipped (never {@code null})
      */
     @Override
     public void onTestSkipped(ITestResult result) {
@@ -103,24 +127,24 @@ public class TestListener implements ITestListener {
     }
 
     /**
-     * Called when a test fails but is within the configured success percentage.
+     * Called when a test method fails but the failure is within the configured
+     * success-percentage threshold ({@code @Test(successPercentage = ...)}).
      *
-     * @param result metadata about the test
+     * <p>Logs a warning line at WARN level.</p>
+     *
+     * @param result the result object for the test (never {@code null})
      */
     @Override
     public void onTestFailedButWithinSuccessPercentage(ITestResult result) {
         logger.warn("~ FAILED WITHIN SUCCESS PERCENTAGE: {}", getTestName(result));
     }
 
-    // -------------------------------------------------------------------------
-    // Private helpers
-    // -------------------------------------------------------------------------
-
     /**
-     * Returns a human-readable test name in the form {@code ClassName.methodName}.
+     * Builds a human-readable test identifier in the form
+     * {@code "ClassName.methodName"}.
      *
-     * @param result the test result
-     * @return the qualified test name
+     * @param result the TestNG result object from which the name is derived
+     * @return a non-null string of the form {@code "fully.qualified.ClassName.methodName"}
      */
     private String getTestName(ITestResult result) {
         return result.getTestClass().getName() + "." + result.getMethod().getMethodName();

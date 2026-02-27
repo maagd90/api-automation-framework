@@ -12,44 +12,42 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * HTTP client for GraphQL API interactions.
+ * Client class for executing GraphQL queries and mutations against a GraphQL endpoint.
  *
- * <p>Wraps REST-Assured to send GraphQL queries and mutations as HTTP POST requests
- * to a configured GraphQL endpoint. Supports parameterised queries via GraphQL variables.
+ * <p>This class wraps REST-Assured to provide a convenient API for sending GraphQL
+ * requests. It handles request serialisation, logging, and response extraction.
+ * Both parameterised (variable-based) and plain queries are supported.</p>
  *
- * <p>Example usage:
+ * <p>Usage example:</p>
  * <pre>{@code
  * GraphQLClient client = new GraphQLClient();
- *
- * // Simple query
  * Response response = client.executeQuery("{ rockets { id name } }");
  *
- * // Query with variables
- * Map<String, Object> vars = new HashMap<>();
- * vars.put("id", "falcon9");
- * Response response = client.executeQuery(GraphQLConstants.ROCKET_BY_ID_QUERY, vars);
- *
- * // Check for errors
- * if (client.hasErrors(response)) {
- *     System.out.println("GraphQL error returned");
- * }
+ * // With variables
+ * Map<String, Object> vars = Map.of("id", "falcon9");
+ * Response response = client.executeQuery(ROCKET_BY_ID_QUERY, vars);
  * }</pre>
  *
+ * @author api-automation-framework
+ * @version 1.0.0
+ * @see RestApiClient
  * @see ConfigurationManager
- * @see GraphQLConstants
  */
 public class GraphQLClient {
 
     private static final Logger logger = LogManager.getLogger(GraphQLClient.class);
 
-    /** The fully-qualified GraphQL endpoint URL. */
+    /** The fully-qualified URL of the GraphQL endpoint. */
     private final String graphqlUrl;
 
-    /** Jackson mapper used internally for serialisation. */
+    /** Jackson mapper used for request-body serialisation. */
     private final ObjectMapper objectMapper;
 
     /**
-     * Creates a {@code GraphQLClient} using the GraphQL URL from {@link ConfigurationManager}.
+     * Creates a {@code GraphQLClient} using the GraphQL URL configured in
+     * {@link ConfigurationManager}.
+     *
+     * <p>The URL is resolved via {@code ConfigurationManager.getInstance().getGraphQLUrl()}.</p>
      */
     public GraphQLClient() {
         this.graphqlUrl = ConfigurationManager.getInstance().getGraphQLUrl();
@@ -58,9 +56,9 @@ public class GraphQLClient {
     }
 
     /**
-     * Creates a {@code GraphQLClient} configured for the given GraphQL endpoint URL.
+     * Creates a {@code GraphQLClient} targeting the supplied GraphQL endpoint URL.
      *
-     * @param graphqlUrl the fully-qualified URL of the GraphQL endpoint
+     * @param graphqlUrl the fully-qualified URL of the GraphQL endpoint (must not be {@code null})
      */
     public GraphQLClient(String graphqlUrl) {
         this.graphqlUrl = graphqlUrl;
@@ -71,8 +69,12 @@ public class GraphQLClient {
     /**
      * Executes a GraphQL query without variables.
      *
-     * @param query the GraphQL query string
-     * @return the HTTP {@link Response} containing the JSON body
+     * <p>Equivalent to calling {@link #executeQuery(String, Map)} with a {@code null}
+     * variables map.</p>
+     *
+     * @param query the GraphQL query string (must not be {@code null} or empty)
+     * @return the raw REST-Assured {@link Response} from the server
+     * @see #executeQuery(String, Map)
      */
     public Response executeQuery(String query) {
         return executeQuery(query, null);
@@ -81,9 +83,13 @@ public class GraphQLClient {
     /**
      * Executes a GraphQL query with optional variables.
      *
-     * @param query     the GraphQL query string
-     * @param variables a map of variable names to values, or {@code null} if none
-     * @return the HTTP {@link Response} containing the JSON body
+     * <p>The query and variables are serialised into a JSON request body of the form:
+     * <pre>{@code { "query": "...", "variables": { ... } }}</pre>
+     * Variables are omitted from the body when {@code variables} is {@code null} or empty.</p>
+     *
+     * @param query     the GraphQL query string (must not be {@code null} or empty)
+     * @param variables a map of variable name-to-value pairs; may be {@code null} or empty
+     * @return the raw REST-Assured {@link Response} from the server
      */
     public Response executeQuery(String query, Map<String, Object> variables) {
         Map<String, Object> requestBody = new HashMap<>();
@@ -110,9 +116,12 @@ public class GraphQLClient {
     /**
      * Executes a GraphQL mutation with optional variables.
      *
-     * @param mutation  the GraphQL mutation string
-     * @param variables a map of variable names to values, or {@code null} if none
-     * @return the HTTP {@link Response} containing the JSON body
+     * <p>GraphQL mutations are sent as POST requests identical in structure to queries.
+     * The mutation string and variables are serialised into a JSON body.</p>
+     *
+     * @param mutation  the GraphQL mutation string (must not be {@code null} or empty)
+     * @param variables a map of variable name-to-value pairs; may be {@code null} or empty
+     * @return the raw REST-Assured {@link Response} from the server
      */
     public Response executeMutation(String mutation, Map<String, Object> variables) {
         Map<String, Object> requestBody = new HashMap<>();
@@ -137,20 +146,24 @@ public class GraphQLClient {
     }
 
     /**
-     * Returns {@code true} when the GraphQL response body contains an {@code "errors"} field.
+     * Returns {@code true} if the GraphQL response body contains an {@code errors} field.
      *
-     * @param response the HTTP response to inspect
-     * @return {@code true} if errors were returned, {@code false} otherwise
+     * <p>According to the GraphQL specification, a response may include both {@code data}
+     * and {@code errors} fields simultaneously, so this check alone does not imply that
+     * the request failed completely.</p>
+     *
+     * @param response the response received from the GraphQL server (must not be {@code null})
+     * @return {@code true} if an {@code errors} array is present in the response; {@code false} otherwise
      */
     public boolean hasErrors(Response response) {
         return response.jsonPath().get("errors") != null;
     }
 
     /**
-     * Returns {@code true} when the GraphQL response body contains a {@code "data"} field.
+     * Returns {@code true} if the GraphQL response body contains a non-null {@code data} field.
      *
-     * @param response the HTTP response to inspect
-     * @return {@code true} if data is present, {@code false} otherwise
+     * @param response the response received from the GraphQL server (must not be {@code null})
+     * @return {@code true} if a {@code data} field is present in the response; {@code false} otherwise
      */
     public boolean hasData(Response response) {
         return response.jsonPath().get("data") != null;

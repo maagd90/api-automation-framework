@@ -1,176 +1,214 @@
 package com.automation.utils;
 
 import io.restassured.RestAssured;
-import io.restassured.response.Response;
+import io.restassured.builder.RequestSpecBuilder;
+import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Fluent builder for constructing and sending REST API requests.
+ * Fluent builder for constructing REST-Assured {@link RequestSpecification} objects.
  *
- * <p>Provides a readable, step-by-step DSL for configuring a request before
- * dispatching it. Each setter method returns {@code this} so that calls can be chained.
+ * <p>This builder encapsulates the incremental assembly of HTTP request parameters —
+ * base URI, headers, query parameters, path parameters, body, and content/accept
+ * types — and produces a fully-configured {@link RequestSpecification} via
+ * {@link #build()}.</p>
  *
- * <p>Example usage:
+ * <p>Usage example:</p>
  * <pre>{@code
- * Response response = new RequestBuilder()
- *         .withBaseUrl("https://jsonplaceholder.typicode.com")
- *         .withHeaders(Map.of("Accept", "application/json"))
- *         .withQueryParam("userId", "1")
- *         .get("/posts");
+ * RequestSpecification spec = new RequestBuilder()
+ *         .baseUri("https://api.example.com")
+ *         .header("Authorization", "Bearer token123")
+ *         .queryParam("page", 1)
+ *         .contentType(ContentType.JSON)
+ *         .body(myRequestObject)
+ *         .build();
  *
- * Response created = new RequestBuilder()
- *         .withBaseUrl("https://jsonplaceholder.typicode.com")
- *         .withBody(postRequest)
- *         .post("/posts");
+ * Response response = RestAssured.given()
+ *         .spec(spec)
+ *         .when()
+ *         .get("/resources")
+ *         .then()
+ *         .extract()
+ *         .response();
  * }</pre>
  *
+ * @author api-automation-framework
+ * @version 1.0.0
  * @see RestApiClient
  * @see ResponseValidator
  */
 public class RequestBuilder {
 
-    private static final Logger logger = LogManager.getLogger(RequestBuilder.class);
+    /** Underlying REST-Assured spec builder being populated. */
+    private final RequestSpecBuilder specBuilder;
 
-    /** Base URL prepended to all endpoint paths. */
-    private String baseUrl;
-
-    /** HTTP headers to include in the request. */
-    private final Map<String, String> headers = new HashMap<>();
-
-    /** Query parameters to append to the URL. */
+    /** Accumulated query parameters. */
     private final Map<String, Object> queryParams = new HashMap<>();
 
-    /** Request body object (serialised to JSON). */
+    /** Accumulated path parameters. */
+    private final Map<String, Object> pathParams = new HashMap<>();
+
+    /** Accumulated request headers. */
+    private final Map<String, String> headers = new HashMap<>();
+
+    /** The request body to be sent, if any. */
     private Object body;
 
     /**
-     * Sets the base URL for the request.
-     *
-     * @param url the fully-qualified base URL (e.g. {@code "https://api.example.com"})
-     * @return this builder for chaining
+     * Creates a new {@code RequestBuilder} with default JSON content-type and accept headers.
      */
-    public RequestBuilder withBaseUrl(String url) {
-        this.baseUrl = url;
+    public RequestBuilder() {
+        this.specBuilder = new RequestSpecBuilder()
+                .setContentType(ContentType.JSON)
+                .setAccept(ContentType.JSON);
+    }
+
+    /**
+     * Sets the base URI for the request.
+     *
+     * @param baseUri the scheme + host [+ port] portion of the target URL
+     *                (e.g. {@code "https://api.example.com"}); must not be {@code null}
+     * @return this builder instance for method chaining
+     */
+    public RequestBuilder baseUri(String baseUri) {
+        specBuilder.setBaseUri(baseUri);
         return this;
     }
 
     /**
-     * Replaces all HTTP headers with the provided map.
+     * Sets the base path that is appended to the base URI for every request built
+     * from this spec.
      *
-     * @param headers a map of header name to header value
-     * @return this builder for chaining
+     * @param basePath the path prefix (e.g. {@code "/v1"}); must not be {@code null}
+     * @return this builder instance for method chaining
      */
-    public RequestBuilder withHeaders(Map<String, String> headers) {
-        this.headers.clear();
+    public RequestBuilder basePath(String basePath) {
+        specBuilder.setBasePath(basePath);
+        return this;
+    }
+
+    /**
+     * Adds a single HTTP request header.
+     *
+     * @param name  the header name (e.g. {@code "Authorization"}); must not be {@code null}
+     * @param value the header value; must not be {@code null}
+     * @return this builder instance for method chaining
+     */
+    public RequestBuilder header(String name, String value) {
+        headers.put(name, value);
+        return this;
+    }
+
+    /**
+     * Adds all entries from the supplied map as HTTP request headers.
+     *
+     * @param headers a map of header name-to-value pairs (must not be {@code null})
+     * @return this builder instance for method chaining
+     */
+    public RequestBuilder headers(Map<String, String> headers) {
         this.headers.putAll(headers);
         return this;
     }
 
     /**
-     * Sets the request body object, which will be serialised to JSON.
+     * Adds a single query parameter to the request URL.
      *
-     * @param body the request body (e.g. a POJO or a {@code Map})
-     * @return this builder for chaining
+     * @param name  the query-parameter name (must not be {@code null})
+     * @param value the query-parameter value
+     * @return this builder instance for method chaining
      */
-    public RequestBuilder withBody(Object body) {
+    public RequestBuilder queryParam(String name, Object value) {
+        queryParams.put(name, value);
+        return this;
+    }
+
+    /**
+     * Adds a single path parameter that will be substituted into the endpoint template.
+     *
+     * <p>For example, a path parameter {@code "id" -> 42} substituted into
+     * {@code "/posts/{id}"} produces {@code "/posts/42"}.</p>
+     *
+     * @param name  the path-parameter placeholder name (must not be {@code null})
+     * @param value the value to substitute
+     * @return this builder instance for method chaining
+     */
+    public RequestBuilder pathParam(String name, Object value) {
+        pathParams.put(name, value);
+        return this;
+    }
+
+    /**
+     * Sets the request body to be serialised and sent with the request.
+     *
+     * @param body the body object (will be serialised to JSON by REST-Assured);
+     *             must not be {@code null}
+     * @return this builder instance for method chaining
+     */
+    public RequestBuilder body(Object body) {
         this.body = body;
         return this;
     }
 
     /**
-     * Adds a single query parameter.
+     * Overrides the {@code Content-Type} header for this request.
      *
-     * @param key   the query parameter name
-     * @param value the query parameter value
-     * @return this builder for chaining
+     * @param contentType the content type to set (e.g. {@link ContentType#JSON})
+     * @return this builder instance for method chaining
      */
-    public RequestBuilder withQueryParam(String key, Object value) {
-        this.queryParams.put(key, value);
+    public RequestBuilder contentType(ContentType contentType) {
+        specBuilder.setContentType(contentType);
         return this;
     }
 
-    // -------------------------------------------------------------------------
-    // HTTP method dispatchers
-    // -------------------------------------------------------------------------
-
     /**
-     * Sends a GET request to {@code baseUrl + endpoint} using the configured headers and
-     * query parameters.
+     * Overrides the {@code Accept} header for this request.
      *
-     * @param endpoint the path relative to the base URL (e.g. {@code "/posts"})
-     * @return the HTTP {@link Response}
+     * @param acceptType the accepted response content type (e.g. {@link ContentType#JSON})
+     * @return this builder instance for method chaining
      */
-    public Response get(String endpoint) {
-        logger.info("GET {}{}", baseUrl, endpoint);
-        RequestSpecification spec = buildSpec();
-        if (!queryParams.isEmpty()) {
-            spec.queryParams(queryParams);
-        }
-        return spec.when().get(baseUrl + endpoint).then().extract().response();
+    public RequestBuilder accept(ContentType acceptType) {
+        specBuilder.setAccept(acceptType);
+        return this;
     }
 
     /**
-     * Sends a POST request to {@code baseUrl + endpoint} with the configured body and headers.
+     * Adds a Bearer-token {@code Authorization} header to the request.
      *
-     * @param endpoint the path relative to the base URL
-     * @return the HTTP {@link Response}
+     * <p>Equivalent to calling {@code header("Authorization", "Bearer " + token)}.</p>
+     *
+     * @param token the bearer token value (must not be {@code null})
+     * @return this builder instance for method chaining
      */
-    public Response post(String endpoint) {
-        logger.info("POST {}{}", baseUrl, endpoint);
-        RequestSpecification spec = buildSpec();
-        if (body != null) {
-            spec.body(body);
-        }
-        return spec.when().post(baseUrl + endpoint).then().extract().response();
+    public RequestBuilder bearerAuth(String token) {
+        headers.put("Authorization", "Bearer " + token);
+        return this;
     }
 
     /**
-     * Sends a PUT request to {@code baseUrl + endpoint} with the configured body and headers.
+     * Builds and returns a fully configured {@link RequestSpecification}.
      *
-     * @param endpoint the path relative to the base URL
-     * @return the HTTP {@link Response}
-     */
-    public Response put(String endpoint) {
-        logger.info("PUT {}{}", baseUrl, endpoint);
-        RequestSpecification spec = buildSpec();
-        if (body != null) {
-            spec.body(body);
-        }
-        return spec.when().put(baseUrl + endpoint).then().extract().response();
-    }
-
-    /**
-     * Sends a DELETE request to {@code baseUrl + endpoint} using the configured headers.
+     * <p>All accumulated headers, query parameters, path parameters, and the body
+     * are applied to the underlying {@link RequestSpecBuilder} before building.</p>
      *
-     * @param endpoint the path relative to the base URL
-     * @return the HTTP {@link Response}
+     * @return a configured {@link RequestSpecification} ready for use with
+     *         {@code RestAssured.given().spec(...)}
      */
-    public Response delete(String endpoint) {
-        logger.info("DELETE {}{}", baseUrl, endpoint);
-        return buildSpec().when().delete(baseUrl + endpoint).then().extract().response();
-    }
-
-    // -------------------------------------------------------------------------
-    // Internal helpers
-    // -------------------------------------------------------------------------
-
-    /**
-     * Constructs the REST-Assured {@link RequestSpecification} from the builder state.
-     *
-     * @return a configured request specification
-     */
-    private RequestSpecification buildSpec() {
-        RequestSpecification spec = RestAssured.given()
-                .contentType("application/json")
-                .accept("application/json");
+    public RequestSpecification build() {
         if (!headers.isEmpty()) {
-            spec.headers(headers);
+            specBuilder.addHeaders(headers);
         }
-        return spec;
+        if (!queryParams.isEmpty()) {
+            specBuilder.addQueryParams(queryParams);
+        }
+        if (!pathParams.isEmpty()) {
+            specBuilder.addPathParams(pathParams);
+        }
+        if (body != null) {
+            specBuilder.setBody(body);
+        }
+        return specBuilder.build();
     }
 }

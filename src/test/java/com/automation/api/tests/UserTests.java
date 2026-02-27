@@ -24,14 +24,26 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * End-to-end tests for the JSONPlaceholder Users REST API.
+ * Test class covering read operations and validations for the JSONPlaceholder
+ * {@code /users} REST API endpoint.
  *
- * <p>Covers listing all users, fetching a single user, validating the response
- * structure, traversing user posts, and error-handling for non-existent users.
+ * <p>All tests use {@link RestApiClient} pointed at
+ * {@link ApiConstants#JSONPLACEHOLDER_BASE_URL} and validate responses with
+ * {@link ResponseValidator} and {@link AssertionUtils}.</p>
  *
- * <p>Base URL: {@link ApiConstants#JSONPLACEHOLDER_BASE_URL}
+ * <p>The tests are organised into the following Allure stories:</p>
+ * <ul>
+ *   <li><b>Get All Users</b> – verifies the full collection and response time.</li>
+ *   <li><b>Get User By ID</b> – verifies a single-user response and data mapping.</li>
+ *   <li><b>User Response Structure</b> – verifies all mandatory fields are present.</li>
+ *   <li><b>User Posts</b> – verifies that cross-resource filtering works correctly.</li>
+ *   <li><b>Error Handling</b> – verifies HTTP 404 for a non-existent user.</li>
+ *   <li><b>User Email Validation</b> – verifies that every user has a valid email.</li>
+ * </ul>
  *
- * @see PostTests
+ * @author api-automation-framework
+ * @version 1.0.0
+ * @see RestApiClient
  * @see UserResponse
  */
 @Epic("REST API Testing")
@@ -40,12 +52,12 @@ import java.util.Map;
 public class UserTests {
 
     private static final Logger logger = LogManager.getLogger(UserTests.class);
-
-    /** Shared REST client configured for the JSONPlaceholder base URL. */
     private RestApiClient client;
 
     /**
-     * Initialises the {@link RestApiClient} before any test in the class runs.
+     * Initialises the {@link RestApiClient} before any test in this class runs.
+     *
+     * <p>The client is pointed at {@link ApiConstants#JSONPLACEHOLDER_BASE_URL}.</p>
      */
     @BeforeClass
     public void setUp() {
@@ -53,13 +65,9 @@ public class UserTests {
         logger.info("UserTests setup complete");
     }
 
-    // -------------------------------------------------------------------------
-    // List tests
-    // -------------------------------------------------------------------------
-
     /**
-     * Verifies that fetching all users returns exactly {@link ApiConstants#TOTAL_USERS} records
-     * within an acceptable response time.
+     * Verifies that {@code GET /users} returns HTTP 200 with exactly
+     * {@link ApiConstants#TOTAL_USERS} user records within 5 seconds.
      */
     @Test
     @Story("Get All Users")
@@ -76,13 +84,9 @@ public class UserTests {
         logger.info("Retrieved {} users", ApiConstants.TOTAL_USERS);
     }
 
-    // -------------------------------------------------------------------------
-    // Single-user retrieval
-    // -------------------------------------------------------------------------
-
     /**
-     * Verifies that fetching user 1 by ID returns the correct user data including
-     * the required {@code name}, {@code username} and {@code email} fields.
+     * Verifies that {@code GET /users/1} returns HTTP 200 with the correct user data
+     * and that the response can be deserialised into a {@link UserResponse}.
      */
     @Test
     @Story("Get User By ID")
@@ -106,19 +110,16 @@ public class UserTests {
         logger.info("Retrieved user: {} ({})", user.getName(), user.getEmail());
     }
 
-    // -------------------------------------------------------------------------
-    // Structure validation
-    // -------------------------------------------------------------------------
-
     /**
-     * Verifies that the user resource at ID 1 contains all expected top-level fields
-     * and that the {@code Content-Type} is {@code application/json}.
+     * Verifies that the {@code GET /users/1} response contains all mandatory top-level
+     * fields including the nested {@code address} and {@code company} objects,
+     * and that the Content-Type is JSON.
      */
     @Test
     @Story("User Response Structure")
     @Description("Verify that user response has all required fields")
     @Severity(SeverityLevel.NORMAL)
-    public void testUserDataValidation() {
+    public void testUserResponseStructure() {
         Response response = client.getById(ApiConstants.USERS_ENDPOINT, 1);
 
         ResponseValidator.of(response)
@@ -135,13 +136,9 @@ public class UserTests {
         AssertionUtils.assertContentType(response, "application/json");
     }
 
-    // -------------------------------------------------------------------------
-    // Related resources
-    // -------------------------------------------------------------------------
-
     /**
-     * Verifies that user 1 has associated posts by fetching the posts endpoint
-     * filtered by {@code userId=1}.
+     * Verifies that {@code GET /posts?userId=1} returns HTTP 200 with a non-empty list,
+     * confirming that cross-resource filtering by user ID works correctly.
      */
     @Test
     @Story("User Posts")
@@ -161,12 +158,8 @@ public class UserTests {
         logger.info("User {} has {} posts", userId, posts.size());
     }
 
-    // -------------------------------------------------------------------------
-    // Error handling
-    // -------------------------------------------------------------------------
-
     /**
-     * Verifies that requesting a non-existent user returns HTTP 404.
+     * Verifies that requesting a user with an ID that does not exist returns HTTP 404.
      */
     @Test
     @Story("Error Handling")
@@ -177,12 +170,9 @@ public class UserTests {
         AssertionUtils.assertStatusCode(response, ApiConstants.STATUS_NOT_FOUND);
     }
 
-    // -------------------------------------------------------------------------
-    // Data quality
-    // -------------------------------------------------------------------------
-
     /**
-     * Verifies that every user in the dataset has a valid e-mail address containing {@code @}.
+     * Verifies that every user in the {@code GET /users} response has a non-null
+     * email address that contains the {@code @} character.
      */
     @Test
     @Story("User Email Validation")

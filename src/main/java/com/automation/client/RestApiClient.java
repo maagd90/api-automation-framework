@@ -12,43 +12,62 @@ import org.apache.logging.log4j.Logger;
 import java.util.Map;
 
 /**
- * HTTP client for REST API interactions using REST-Assured.
+ * Base client for executing REST API requests using REST-Assured.
  *
- * <p>Provides methods to perform standard HTTP operations (GET, POST, PUT, PATCH, DELETE)
- * against REST API endpoints. This client is pre-configured with the base URL, content type,
- * and timeout settings loaded from {@link ConfigurationManager}.
+ * <p>This class provides a thin, reusable wrapper around the REST-Assured library
+ * that handles common concerns such as base URI configuration, connection/read
+ * timeouts, default content-type headers, and request/response logging. All HTTP
+ * methods (GET, POST, PUT, PATCH, DELETE) are exposed as simple, one-line calls.</p>
  *
- * <p>Example usage:
+ * <p>The client is initialised with the base URL sourced from
+ * {@link ConfigurationManager} (no-arg constructor) or an explicit URL can be
+ * supplied directly.</p>
+ *
+ * <p>Usage example:</p>
  * <pre>{@code
- * RestApiClient client = new RestApiClient();
- * Response response = client.get("/posts");
- * response = client.getById("/posts", 1);
+ * RestApiClient client = new RestApiClient("https://jsonplaceholder.typicode.com");
  *
+ * // Simple GET
+ * Response all = client.get("/posts");
+ *
+ * // GET by ID
+ * Response single = client.getById("/posts", 1);
+ *
+ * // POST with body
  * PostRequest body = PostRequest.builder().title("Hello").body("World").userId(1).build();
  * Response created = client.post("/posts", body);
  * }</pre>
  *
+ * @author api-automation-framework
+ * @version 1.0.0
+ * @see GraphQLClient
  * @see ConfigurationManager
- * @see io.restassured.RestAssured
  */
 public class RestApiClient {
 
     private static final Logger logger = LogManager.getLogger(RestApiClient.class);
 
-    /** The underlying REST-Assured request specification used for all requests. */
+    /** Shared REST-Assured request specification applied to every request. */
     private final RequestSpecification requestSpec;
 
     /**
      * Creates a {@code RestApiClient} using the base URL from {@link ConfigurationManager}.
+     *
+     * <p>Connection and read timeout values are also sourced from
+     * {@link ConfigurationManager}.</p>
      */
     public RestApiClient() {
         this(ConfigurationManager.getInstance().getBaseUrl());
     }
 
     /**
-     * Creates a {@code RestApiClient} configured for the given base URL.
+     * Creates a {@code RestApiClient} targeting the supplied base URL.
      *
-     * @param baseUrl the base URL for all HTTP requests (e.g. {@code "https://api.example.com"})
+     * <p>Connection and read timeout values are sourced from {@link ConfigurationManager}.
+     * Both the method and URI are logged for every outgoing request.</p>
+     *
+     * @param baseUrl the root URL (scheme + host [+ port]) to use for all requests
+     *                (must not be {@code null} or empty)
      */
     public RestApiClient(String baseUrl) {
         ConfigurationManager config = ConfigurationManager.getInstance();
@@ -70,10 +89,10 @@ public class RestApiClient {
     }
 
     /**
-     * Sends a GET request to the given endpoint.
+     * Sends an HTTP GET request to the given endpoint path.
      *
      * @param endpoint the path relative to the base URL (e.g. {@code "/posts"})
-     * @return the HTTP {@link Response}
+     * @return the server's {@link Response}
      */
     public Response get(String endpoint) {
         logger.info("GET {}", endpoint);
@@ -89,11 +108,11 @@ public class RestApiClient {
     }
 
     /**
-     * Sends a GET request to the given endpoint with query parameters.
+     * Sends an HTTP GET request with query parameters appended to the URL.
      *
-     * @param endpoint    the path relative to the base URL
-     * @param queryParams key-value pairs to append as query parameters
-     * @return the HTTP {@link Response}
+     * @param endpoint    the path relative to the base URL (e.g. {@code "/posts"})
+     * @param queryParams a map of query-parameter names to values (must not be {@code null})
+     * @return the server's {@link Response}
      */
     public Response get(String endpoint, Map<String, Object> queryParams) {
         logger.info("GET {} with params: {}", endpoint, queryParams);
@@ -110,11 +129,13 @@ public class RestApiClient {
     }
 
     /**
-     * Sends a GET request for a resource identified by its numeric {@code id}.
+     * Sends an HTTP GET request for the resource identified by the given numeric ID.
+     *
+     * <p>The final URL is constructed by appending {@code "/" + id} to {@code endpoint}.</p>
      *
      * @param endpoint the path relative to the base URL (e.g. {@code "/posts"})
-     * @param id       the resource identifier appended to the endpoint
-     * @return the HTTP {@link Response}
+     * @param id       the numeric resource identifier
+     * @return the server's {@link Response}
      */
     public Response getById(String endpoint, int id) {
         logger.info("GET {}/{}", endpoint, id);
@@ -130,11 +151,14 @@ public class RestApiClient {
     }
 
     /**
-     * Sends a POST request with the given body to the specified endpoint.
+     * Sends an HTTP POST request with a serialisable body.
      *
-     * @param endpoint the path relative to the base URL
-     * @param body     the request body object serialized to JSON
-     * @return the HTTP {@link Response}
+     * <p>The {@code body} object is serialised to JSON using Jackson (via REST-Assured's
+     * built-in object-mapping support).</p>
+     *
+     * @param endpoint the path relative to the base URL (e.g. {@code "/posts"})
+     * @param body     the request body object to serialise and send (must not be {@code null})
+     * @return the server's {@link Response}
      */
     public Response post(String endpoint, Object body) {
         logger.info("POST {}", endpoint);
@@ -151,12 +175,14 @@ public class RestApiClient {
     }
 
     /**
-     * Sends a PUT request to update the resource at {@code endpoint/id}.
+     * Sends an HTTP PUT request to fully replace the resource with the given ID.
      *
-     * @param endpoint the path relative to the base URL
-     * @param id       the resource identifier
-     * @param body     the replacement request body
-     * @return the HTTP {@link Response}
+     * <p>The final URL is constructed by appending {@code "/" + id} to {@code endpoint}.</p>
+     *
+     * @param endpoint the path relative to the base URL (e.g. {@code "/posts"})
+     * @param id       the numeric resource identifier
+     * @param body     the replacement resource body to serialise and send (must not be {@code null})
+     * @return the server's {@link Response}
      */
     public Response put(String endpoint, int id, Object body) {
         logger.info("PUT {}/{}", endpoint, id);
@@ -173,12 +199,14 @@ public class RestApiClient {
     }
 
     /**
-     * Sends a PATCH request to partially update the resource at {@code endpoint/id}.
+     * Sends an HTTP PATCH request to partially update the resource with the given ID.
      *
-     * @param endpoint the path relative to the base URL
-     * @param id       the resource identifier
-     * @param body     the partial update body
-     * @return the HTTP {@link Response}
+     * <p>The final URL is constructed by appending {@code "/" + id} to {@code endpoint}.</p>
+     *
+     * @param endpoint the path relative to the base URL (e.g. {@code "/posts"})
+     * @param id       the numeric resource identifier
+     * @param body     the partial-update body to serialise and send (must not be {@code null})
+     * @return the server's {@link Response}
      */
     public Response patch(String endpoint, int id, Object body) {
         logger.info("PATCH {}/{}", endpoint, id);
@@ -195,11 +223,13 @@ public class RestApiClient {
     }
 
     /**
-     * Sends a DELETE request to remove the resource at {@code endpoint/id}.
+     * Sends an HTTP DELETE request for the resource identified by the given numeric ID.
      *
-     * @param endpoint the path relative to the base URL
-     * @param id       the resource identifier
-     * @return the HTTP {@link Response}
+     * <p>The final URL is constructed by appending {@code "/" + id} to {@code endpoint}.</p>
+     *
+     * @param endpoint the path relative to the base URL (e.g. {@code "/posts"})
+     * @param id       the numeric resource identifier
+     * @return the server's {@link Response}
      */
     public Response delete(String endpoint, int id) {
         logger.info("DELETE {}/{}", endpoint, id);
@@ -215,12 +245,16 @@ public class RestApiClient {
     }
 
     /**
-     * Sends a POST request with custom HTTP headers.
+     * Sends an HTTP POST request with a body and additional custom headers.
      *
-     * @param endpoint the path relative to the base URL
-     * @param body     the request body object
-     * @param headers  additional HTTP headers to include
-     * @return the HTTP {@link Response}
+     * <p>Custom headers are merged with the default headers defined in the shared
+     * request specification; if a key conflicts, the value supplied in
+     * {@code headers} takes precedence.</p>
+     *
+     * @param endpoint the path relative to the base URL (e.g. {@code "/posts"})
+     * @param body     the request body object to serialise and send (must not be {@code null})
+     * @param headers  a map of additional HTTP header names to values (must not be {@code null})
+     * @return the server's {@link Response}
      */
     public Response postWithHeaders(String endpoint, Object body, Map<String, String> headers) {
         logger.info("POST {} with custom headers", endpoint);

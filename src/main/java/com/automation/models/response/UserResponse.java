@@ -6,17 +6,24 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Response model representing a User resource returned by the JSONPlaceholder API.
+ * Response POJO representing a single user as returned by the JSONPlaceholder REST API.
  *
- * <p>Includes nested {@link Address} and {@link Company} inner classes that mirror
- * the structure of the API response. Unmapped JSON fields are silently ignored.
+ * <p>Instances of this class are deserialised from the JSON body of responses to
+ * {@code GET /users} and {@code GET /users/{id}}. Unknown JSON fields are silently
+ * ignored via {@link JsonIgnoreProperties#ignoreUnknown()}.</p>
  *
- * <p>Example usage:
+ * <p>The class contains two nested static POJOs — {@link Address} and {@link Company} —
+ * which map to the correspondingly named nested objects in the API response.</p>
+ *
+ * <p>Usage example:</p>
  * <pre>{@code
- * Response response = client.getById(ApiConstants.USERS_ENDPOINT, 1);
  * UserResponse user = response.as(UserResponse.class);
- * System.out.println(user.getName() + " – " + user.getEmail());
+ * Assert.assertNotNull(user.getEmail());
+ * Assert.assertTrue(user.getEmail().contains("@"));
  * }</pre>
+ *
+ * @author api-automation-framework
+ * @version 1.0.0
  */
 @Data
 @NoArgsConstructor
@@ -24,36 +31,37 @@ import lombok.NoArgsConstructor;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class UserResponse {
 
-    /** Server-assigned unique identifier for this user. */
+    /** Server-assigned unique identifier of the user. */
     private Integer id;
 
-    /** Full display name of the user. */
+    /** Full name of the user. */
     private String name;
 
-    /** Unique login username. */
+    /** Login username of the user. */
     private String username;
 
-    /** Contact e-mail address. */
+    /** Email address of the user. */
     private String email;
 
-    /** Physical or postal address of the user. */
-    private Address address;
-
-    /** Contact phone number. */
+    /** Phone number of the user. */
     private String phone;
 
-    /** Personal website URL. */
+    /** Personal website URL of the user. */
     private String website;
 
-    /** Employer company details. */
+    /** Physical address of the user. */
+    private Address address;
+
+    /** Company the user works for. */
     private Company company;
 
-    // -------------------------------------------------------------------------
-    // Inner classes
-    // -------------------------------------------------------------------------
-
     /**
-     * Represents the physical address associated with a user.
+     * Nested POJO representing a physical address.
+     *
+     * <p>Maps to the {@code address} object inside the JSONPlaceholder user response.</p>
+     *
+     * @author api-automation-framework
+     * @version 1.0.0
      */
     @Data
     @NoArgsConstructor
@@ -61,21 +69,26 @@ public class UserResponse {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Address {
 
-        /** Street name and house/apartment number. */
+        /** Street name and number. */
         private String street;
 
-        /** Suite or apartment number. */
+        /** Apartment / suite identifier. */
         private String suite;
 
         /** City name. */
         private String city;
 
-        /** Postal / ZIP code. */
+        /** Postal/zip code. */
         private String zipcode;
     }
 
     /**
-     * Represents the company associated with a user.
+     * Nested POJO representing the company a user works for.
+     *
+     * <p>Maps to the {@code company} object inside the JSONPlaceholder user response.</p>
+     *
+     * @author api-automation-framework
+     * @version 1.0.0
      */
     @Data
     @NoArgsConstructor
@@ -83,13 +96,13 @@ public class UserResponse {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Company {
 
-        /** Legal company name. */
+        /** Name of the company. */
         private String name;
 
-        /** Company catch phrase / tagline. */
+        /** Company's catch-phrase / tagline. */
         private String catchPhrase;
 
-        /** Business strategy string ({@code "bs"} field in the API). */
+        /** Company's business strategy statement. */
         private String bs;
     }
 }

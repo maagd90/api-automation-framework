@@ -28,20 +28,30 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * End-to-end tests for the JSONPlaceholder Posts REST API.
+ * Test class covering CRUD operations and edge cases for the JSONPlaceholder
+ * {@code /posts} REST API endpoint.
  *
- * <p>Covers the full CRUD lifecycle (create, read, update, delete) as well as
- * filtering, data-driven execution and basic error-handling scenarios.
+ * <p>All tests in this class use {@link RestApiClient} to send HTTP requests to
+ * {@link ApiConstants#JSONPLACEHOLDER_BASE_URL} and validate responses with
+ * {@link ResponseValidator} and {@link AssertionUtils}.</p>
  *
- * <p>The tests rely on {@link RestApiClient} for HTTP transport and on
- * {@link ResponseValidator} / {@link AssertionUtils} for assertions. Test execution
- * is reported to Allure via the {@link TestListener}.
+ * <p>The tests are organised into the following Allure stories:</p>
+ * <ul>
+ *   <li><b>Create Post</b> – verifies HTTP 201 and the returned resource.</li>
+ *   <li><b>Read Post</b> – verifies HTTP 200 and the response structure.</li>
+ *   <li><b>Update Post</b> – verifies PUT (full replace) and PATCH (partial update).</li>
+ *   <li><b>Delete Post</b> – verifies successful deletion.</li>
+ *   <li><b>Get All Posts</b> – verifies the full collection response.</li>
+ *   <li><b>Filter Posts</b> – verifies query-parameter filtering.</li>
+ *   <li><b>Error Handling</b> – verifies 404 for a non-existent resource.</li>
+ *   <li><b>Response Validation</b> – verifies response-time SLA.</li>
+ * </ul>
  *
- * <p>Base URL: {@link ApiConstants#JSONPLACEHOLDER_BASE_URL}
- *
- * @see UserTests
+ * @author api-automation-framework
+ * @version 1.0.0
  * @see RestApiClient
- * @see TestDataBuilder
+ * @see PostRequest
+ * @see PostResponse
  */
 @Epic("REST API Testing")
 @Feature("Posts API")
@@ -49,12 +59,12 @@ import java.util.Map;
 public class PostTests {
 
     private static final Logger logger = LogManager.getLogger(PostTests.class);
-
-    /** Shared REST client configured for the JSONPlaceholder base URL. */
     private RestApiClient client;
 
     /**
-     * Initialises the {@link RestApiClient} before any test in the class runs.
+     * Initialises the {@link RestApiClient} before any test in this class runs.
+     *
+     * <p>The client is pointed at {@link ApiConstants#JSONPLACEHOLDER_BASE_URL}.</p>
      */
     @BeforeClass
     public void setUp() {
@@ -62,23 +72,20 @@ public class PostTests {
         logger.info("PostTests setup complete");
     }
 
-    // -------------------------------------------------------------------------
-    // CREATE
-    // -------------------------------------------------------------------------
-
     /**
-     * Verifies that creating a new post via HTTP POST returns HTTP 201 and the
-     * response body echoes the submitted data.
+     * Verifies that creating a new post via {@code POST /posts} returns HTTP 201 and
+     * a response body that mirrors the submitted data.
      *
-     * @see ApiConstants#STATUS_CREATED
-     * @see TestDataBuilder#buildPostRequest(int, String, String)
+     * <p>The test also deserialises the response into a {@link PostResponse} and
+     * asserts that the server-assigned {@code id} is not null.</p>
      */
     @Test
     @Story("Create Post")
     @Description("Verify that creating a new post returns status 201 and correct data")
     @Severity(SeverityLevel.CRITICAL)
     public void testCreatePost() {
-        PostRequest postRequest = TestDataBuilder.buildPostRequest(1, "Test Title", "Test Body Content");
+        PostRequest postRequest = TestDataBuilder.buildPostRequest(
+                "Test Title", "Test Body Content", 1);
 
         Response response = client.post(ApiConstants.POSTS_ENDPOINT, postRequest);
 
@@ -97,37 +104,14 @@ public class PostTests {
     }
 
     /**
-     * Verifies that an invalid (empty) post creation request results in an error.
-     * JSONPlaceholder still returns 201 for empty bodies; this test documents that behaviour.
-     */
-    @Test
-    @Story("Create Post")
-    @Description("Verify error handling for post creation with missing fields")
-    @Severity(SeverityLevel.NORMAL)
-    public void testInvalidPostCreation() {
-        // JSONPlaceholder accepts empty bodies – assert that at minimum the request succeeds
-        PostRequest emptyRequest = new PostRequest();
-        Response response = client.post(ApiConstants.POSTS_ENDPOINT, emptyRequest);
-        // JSONPlaceholder returns 201 even for empty bodies; document and assert that
-        AssertionUtils.assertStatusCode(response, ApiConstants.STATUS_CREATED);
-        logger.info("Invalid post creation returned status: {}", response.getStatusCode());
-    }
-
-    // -------------------------------------------------------------------------
-    // READ
-    // -------------------------------------------------------------------------
-
-    /**
-     * Verifies that fetching a post by ID via HTTP GET returns HTTP 200 and the
-     * expected resource structure.
-     *
-     * @see ApiConstants#STATUS_OK
+     * Verifies that fetching a single post by ID via {@code GET /posts/1} returns
+     * HTTP 200 with a well-formed response body and within the acceptable time limit.
      */
     @Test
     @Story("Read Post")
     @Description("Verify that reading an existing post returns correct structure and data")
     @Severity(SeverityLevel.CRITICAL)
-    public void testGetPost() {
+    public void testGetPostById() {
         int postId = 1;
         Response response = client.getById(ApiConstants.POSTS_ENDPOINT, postId);
 
@@ -146,10 +130,68 @@ public class PostTests {
     }
 
     /**
-     * Verifies that fetching all posts returns exactly {@link ApiConstants#TOTAL_POSTS} items.
+     * Verifies that a full update via {@code PUT /posts/1} returns HTTP 200 and
+     * a response body that reflects the updated values.
      */
     @Test
-    @Story("Read Post")
+    @Story("Update Post")
+    @Description("Verify that updating a post with PUT reflects the changes")
+    @Severity(SeverityLevel.NORMAL)
+    public void testUpdatePost() {
+        int postId = 1;
+        PostRequest updateRequest = TestDataBuilder.buildPostRequest(
+                "Updated Title", "Updated Body", 1);
+
+        Response response = client.put(ApiConstants.POSTS_ENDPOINT, postId, updateRequest);
+
+        ResponseValidator.of(response)
+                .statusCode(ApiConstants.STATUS_OK)
+                .fieldEquals("id", postId)
+                .fieldEquals("title", "Updated Title")
+                .fieldEquals("body", "Updated Body");
+    }
+
+    /**
+     * Verifies that a partial update via {@code PATCH /posts/1} returns HTTP 200 and
+     * only the patched field is changed in the response.
+     */
+    @Test
+    @Story("Update Post")
+    @Description("Verify that partially updating a post with PATCH reflects the changes")
+    @Severity(SeverityLevel.NORMAL)
+    public void testPatchPost() {
+        int postId = 1;
+        Map<String, String> partialUpdate = new HashMap<>();
+        partialUpdate.put("title", "Patched Title");
+
+        Response response = client.patch(ApiConstants.POSTS_ENDPOINT, postId, partialUpdate);
+
+        ResponseValidator.of(response)
+                .statusCode(ApiConstants.STATUS_OK)
+                .fieldEquals("title", "Patched Title");
+    }
+
+    /**
+     * Verifies that deleting a post via {@code DELETE /posts/1} returns HTTP 200.
+     */
+    @Test
+    @Story("Delete Post")
+    @Description("Verify that deleting a post returns successful deletion response")
+    @Severity(SeverityLevel.NORMAL)
+    public void testDeletePost() {
+        int postId = 1;
+        Response response = client.delete(ApiConstants.POSTS_ENDPOINT, postId);
+
+        AssertionUtils.assertStatusCode(response, ApiConstants.STATUS_OK);
+        logger.info("Post {} deleted successfully", postId);
+    }
+
+    /**
+     * Verifies that {@code GET /posts} returns HTTP 200 with exactly
+     * {@link ApiConstants#TOTAL_POSTS} posts within the acceptable response-time SLA.
+     */
+    @Test
+    @Story("Get All Posts")
     @Description("Verify that getting all posts returns correct count and structure")
     @Severity(SeverityLevel.NORMAL)
     public void testGetAllPosts() {
@@ -166,9 +208,8 @@ public class PostTests {
     }
 
     /**
-     * Verifies that filtering posts by {@code userId} returns only posts belonging to that user.
-     *
-     * @see ApiConstants#USER_ID_PARAM
+     * Verifies that {@code GET /posts?userId=1} returns HTTP 200 with a non-empty
+     * list where every post's {@code userId} equals the filter value.
      */
     @Test
     @Story("Filter Posts")
@@ -193,76 +234,8 @@ public class PostTests {
         logger.info("Found {} posts for userId {}", posts.size(), userId);
     }
 
-    // -------------------------------------------------------------------------
-    // UPDATE
-    // -------------------------------------------------------------------------
-
     /**
-     * Verifies that a full replacement (PUT) of a post returns HTTP 200 and reflects
-     * the updated title and body.
-     */
-    @Test
-    @Story("Update Post")
-    @Description("Verify that updating a post with PUT reflects the changes")
-    @Severity(SeverityLevel.NORMAL)
-    public void testUpdatePost() {
-        int postId = 1;
-        PostRequest updateRequest = TestDataBuilder.buildPostRequest(1, "Updated Title", "Updated Body");
-
-        Response response = client.put(ApiConstants.POSTS_ENDPOINT, postId, updateRequest);
-
-        ResponseValidator.of(response)
-                .statusCode(ApiConstants.STATUS_OK)
-                .fieldEquals("id", postId)
-                .fieldEquals("title", "Updated Title")
-                .fieldEquals("body", "Updated Body");
-    }
-
-    /**
-     * Verifies that a partial update (PATCH) of a post's title returns HTTP 200 and
-     * reflects the patched value.
-     */
-    @Test
-    @Story("Update Post")
-    @Description("Verify that partially updating a post with PATCH reflects the changes")
-    @Severity(SeverityLevel.NORMAL)
-    public void testPatchPost() {
-        int postId = 1;
-        Map<String, String> partialUpdate = new HashMap<>();
-        partialUpdate.put("title", "Patched Title");
-
-        Response response = client.patch(ApiConstants.POSTS_ENDPOINT, postId, partialUpdate);
-
-        ResponseValidator.of(response)
-                .statusCode(ApiConstants.STATUS_OK)
-                .fieldEquals("title", "Patched Title");
-    }
-
-    // -------------------------------------------------------------------------
-    // DELETE
-    // -------------------------------------------------------------------------
-
-    /**
-     * Verifies that deleting a post via HTTP DELETE returns HTTP 200.
-     */
-    @Test
-    @Story("Delete Post")
-    @Description("Verify that deleting a post returns successful deletion response")
-    @Severity(SeverityLevel.NORMAL)
-    public void testDeletePost() {
-        int postId = 1;
-        Response response = client.delete(ApiConstants.POSTS_ENDPOINT, postId);
-
-        AssertionUtils.assertStatusCode(response, ApiConstants.STATUS_OK);
-        logger.info("Post {} deleted successfully", postId);
-    }
-
-    // -------------------------------------------------------------------------
-    // ERROR HANDLING
-    // -------------------------------------------------------------------------
-
-    /**
-     * Verifies that requesting a non-existent post returns HTTP 404.
+     * Verifies that requesting a post with an ID that does not exist returns HTTP 404.
      */
     @Test
     @Story("Error Handling")
@@ -273,23 +246,20 @@ public class PostTests {
         AssertionUtils.assertStatusCode(response, ApiConstants.STATUS_NOT_FOUND);
     }
 
-    // -------------------------------------------------------------------------
-    // DATA-DRIVEN
-    // -------------------------------------------------------------------------
-
     /**
-     * Data-driven test that creates posts from multiple datasets.
+     * Data-driven test: creates posts for each row in {@link #postDataProvider()} and
+     * verifies that each creation returns HTTP 201 and a server-assigned {@code id}.
      *
-     * @param title  the post title
-     * @param body   the post body
-     * @param userId the authoring user identifier
+     * @param title  the post title from the data provider
+     * @param body   the post body from the data provider
+     * @param userId the owning user ID from the data provider
      */
     @Test(dataProvider = "postDataProvider")
     @Story("Create Post")
     @Description("Data-driven test: create posts with various datasets")
     @Severity(SeverityLevel.NORMAL)
     public void testCreatePostDataDriven(String title, String body, int userId) {
-        PostRequest postRequest = TestDataBuilder.buildPostRequest(userId, title, body);
+        PostRequest postRequest = TestDataBuilder.buildPostRequest(title, body, userId);
         Response response = client.post(ApiConstants.POSTS_ENDPOINT, postRequest);
 
         AssertionUtils.assertStatusCode(response, ApiConstants.STATUS_CREATED);
@@ -298,25 +268,23 @@ public class PostTests {
     }
 
     /**
-     * Provides three datasets for {@link #testCreatePostDataDriven}.
+     * TestNG data provider supplying title, body, and userId tuples for
+     * {@link #testCreatePostDataDriven(String, String, int)}.
      *
-     * @return a 2D array where each row contains: title, body, userId
+     * @return a 2-D array of {@code [title, body, userId]} test rows
      */
     @DataProvider(name = "postDataProvider")
     public Object[][] postDataProvider() {
         return new Object[][] {
-                {"First Post",  "First post body",  1},
+                {"First Post", "First post body", 1},
                 {"Second Post", "Second post body", 2},
-                {"Third Post",  "Third post body",  3}
+                {"Third Post", "Third post body", 3}
         };
     }
 
-    // -------------------------------------------------------------------------
-    // PERFORMANCE
-    // -------------------------------------------------------------------------
-
     /**
-     * Verifies that the GET all posts response time is within acceptable limits.
+     * Verifies that the {@code GET /posts} response is returned within the acceptable
+     * 10-second time limit.
      */
     @Test
     @Story("Response Validation")

@@ -6,19 +6,23 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Response model representing a Post resource returned by the JSONPlaceholder API.
+ * Response POJO representing a single post as returned by the JSONPlaceholder REST API.
  *
- * <p>Unmapped JSON fields are silently ignored so that the model remains forward-compatible
- * if the API adds new properties in the future.
+ * <p>Instances of this class are deserialised from the JSON body of responses to
+ * {@code GET /posts}, {@code GET /posts/{id}}, {@code POST /posts}, and
+ * {@code PUT /posts/{id}}. Unknown JSON fields are silently ignored via
+ * {@link JsonIgnoreProperties#ignoreUnknown()}.</p>
  *
- * <p>Example usage:
+ * <p>Usage example:</p>
  * <pre>{@code
- * Response response = client.getById(ApiConstants.POSTS_ENDPOINT, 1);
  * PostResponse post = response.as(PostResponse.class);
- * System.out.println(post.getTitle());
+ * Assert.assertNotNull(post.getId());
+ * Assert.assertEquals(post.getTitle(), "Expected Title");
  * }</pre>
  *
- * @see com.automation.models.request.PostRequest
+ * @author api-automation-framework
+ * @version 1.0.0
+ * @see PostRequest
  */
 @Data
 @NoArgsConstructor
@@ -26,24 +30,15 @@ import lombok.NoArgsConstructor;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PostResponse {
 
-    /**
-     * The server-assigned unique identifier for this post.
-     * Populated by the server on creation; present in GET/PUT/PATCH responses.
-     */
+    /** Server-assigned unique identifier of the post. */
     private Integer id;
 
-    /**
-     * The identifier of the user who authored this post.
-     */
-    private Integer userId;
-
-    /**
-     * The headline / title of the post.
-     */
+    /** Title of the post. */
     private String title;
 
-    /**
-     * The main text content of the post.
-     */
+    /** Body (main content) of the post. */
     private String body;
+
+    /** ID of the user who owns this post. */
+    private Integer userId;
 }

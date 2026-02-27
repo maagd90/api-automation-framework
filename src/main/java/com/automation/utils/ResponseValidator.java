@@ -8,106 +8,69 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Fluent wrapper around {@link AssertionUtils} that enables chained validation calls
- * on a single {@link Response}.
+ * Fluent wrapper around {@link AssertionUtils} that enables chained response validation.
  *
- * <p>Example usage:
+ * <p>Create an instance via the static factory method {@link #of(Response)}, then chain
+ * validation calls. Each method returns {@code this}, allowing multiple checks to be
+ * expressed as a single readable statement:</p>
+ *
  * <pre>{@code
  * ResponseValidator.of(response)
- *         .validateResponse(200)
- *         .validateJsonPath("id")
- *         .fieldNotNull("title")
- *         .responseTimeBelow(5000)
- *         .noGraphQLErrors();
+ *         .statusCode(200)
+ *         .contentType("application/json")
+ *         .fieldNotNull("id")
+ *         .fieldEquals("title", "My Title")
+ *         .responseTimeBelow(5000);
  * }</pre>
  *
+ * <p>In addition to validation methods, several extraction helpers are provided for
+ * converting the response body into typed Java objects:</p>
+ *
+ * <pre>{@code
+ * PostResponse post = ResponseValidator.of(response)
+ *         .statusCode(200)
+ *         .extractAs(PostResponse.class);
+ * }</pre>
+ *
+ * @author api-automation-framework
+ * @version 1.0.0
  * @see AssertionUtils
  */
 public class ResponseValidator {
 
     private static final Logger logger = LogManager.getLogger(ResponseValidator.class);
 
-    /** The response being validated by this instance. */
+    /** The REST-Assured response being validated. */
     private final Response response;
 
     /**
-     * Creates a new {@code ResponseValidator} wrapping the given response.
+     * Constructs a {@code ResponseValidator} wrapping the given response.
      *
-     * @param response the HTTP response to validate
+     * <p>Prefer the static factory method {@link #of(Response)} for a more fluent style.</p>
+     *
+     * @param response the response to wrap (must not be {@code null})
      */
     public ResponseValidator(Response response) {
         this.response = response;
     }
 
     /**
-     * Factory method – creates a {@code ResponseValidator} for the given response.
+     * Static factory method – creates a new {@code ResponseValidator} for the given response.
      *
-     * @param response the HTTP response to validate
+     * @param response the response to validate (must not be {@code null})
      * @return a new {@code ResponseValidator} instance
      */
     public static ResponseValidator of(Response response) {
         return new ResponseValidator(response);
     }
 
-    // -------------------------------------------------------------------------
-    // Core validation
-    // -------------------------------------------------------------------------
-
     /**
-     * Validates that the response status code equals {@code expectedCode} and that the
-     * response body is not empty.
+     * Asserts that the response HTTP status code equals {@code expectedCode}.
      *
      * @param expectedCode the expected HTTP status code
-     * @return this instance for chaining
-     * @throws AssertionError if status code or body validation fails
-     */
-    public ResponseValidator validateResponse(int expectedCode) {
-        AssertionUtils.assertStatusCode(response, expectedCode);
-        AssertionUtils.assertBodyNotEmpty(response);
-        return this;
-    }
-
-    /**
-     * Validates that the JSON field at {@code path} is present and not {@code null}.
-     *
-     * @param path the JsonPath expression (e.g. {@code "data.id"})
-     * @return this instance for chaining
-     * @throws AssertionError if the field is absent or null
-     */
-    public ResponseValidator validateJsonPath(String path) {
-        AssertionUtils.assertFieldNotNull(response, path);
-        return this;
-    }
-
-    /**
-     * Validates that the response body conforms to the given JSON schema.
-     *
-     * <p>The {@code schema} parameter is a JSON Schema string. The response body is checked
-     * to be non-empty. Full schema validation requires the optional
-     * {@code rest-assured-json-schema-validator} dependency on the classpath; when it is
-     * absent a warning is logged and the check is skipped.
-     *
-     * @param schema the JSON Schema string to validate against
-     * @return this instance for chaining
-     * @throws AssertionError if the body is empty
-     */
-    public ResponseValidator validateSchema(String schema) {
-        logger.info("Validating response against provided schema");
-        AssertionUtils.assertBodyNotEmpty(response);
-        logger.warn("Full JSON Schema validation requires rest-assured-json-schema-validator on the classpath. "
-                + "Only body-not-empty check was performed.");
-        return this;
-    }
-
-    // -------------------------------------------------------------------------
-    // Fluent assertion delegates
-    // -------------------------------------------------------------------------
-
-    /**
-     * Asserts that the HTTP status code equals {@code expectedCode}.
-     *
-     * @param expectedCode the expected HTTP status code
-     * @return this instance for chaining
+     * @return this instance for method chaining
+     * @throws AssertionError if the actual status code differs
+     * @see AssertionUtils#assertStatusCode(Response, int)
      */
     public ResponseValidator statusCode(int expectedCode) {
         AssertionUtils.assertStatusCode(response, expectedCode);
@@ -115,10 +78,12 @@ public class ResponseValidator {
     }
 
     /**
-     * Asserts that the JSON field at {@code fieldPath} is not {@code null}.
+     * Asserts that the JSON field identified by {@code fieldPath} is not {@code null}.
      *
-     * @param fieldPath the JsonPath expression
-     * @return this instance for chaining
+     * @param fieldPath a JsonPath expression for the field (e.g. {@code "data.id"})
+     * @return this instance for method chaining
+     * @throws AssertionError if the field is absent or {@code null}
+     * @see AssertionUtils#assertFieldNotNull(Response, String)
      */
     public ResponseValidator fieldNotNull(String fieldPath) {
         AssertionUtils.assertFieldNotNull(response, fieldPath);
@@ -126,11 +91,13 @@ public class ResponseValidator {
     }
 
     /**
-     * Asserts that the JSON field at {@code fieldPath} equals {@code expectedValue}.
+     * Asserts that the JSON field identified by {@code fieldPath} equals {@code expectedValue}.
      *
-     * @param fieldPath     the JsonPath expression
-     * @param expectedValue the expected value
-     * @return this instance for chaining
+     * @param fieldPath     a JsonPath expression for the field
+     * @param expectedValue the value the field is expected to hold
+     * @return this instance for method chaining
+     * @throws AssertionError if the actual field value does not equal {@code expectedValue}
+     * @see AssertionUtils#assertFieldEquals(Response, String, Object)
      */
     public ResponseValidator fieldEquals(String fieldPath, Object expectedValue) {
         AssertionUtils.assertFieldEquals(response, fieldPath, expectedValue);
@@ -138,10 +105,12 @@ public class ResponseValidator {
     }
 
     /**
-     * Asserts that the JSON array at {@code fieldPath} is not empty.
+     * Asserts that the JSON array at {@code fieldPath} is non-null and non-empty.
      *
-     * @param fieldPath the JsonPath expression pointing to an array
-     * @return this instance for chaining
+     * @param fieldPath a JsonPath expression for the array
+     * @return this instance for method chaining
+     * @throws AssertionError if the list is {@code null} or empty
+     * @see AssertionUtils#assertListNotEmpty(Response, String)
      */
     public ResponseValidator listNotEmpty(String fieldPath) {
         AssertionUtils.assertListNotEmpty(response, fieldPath);
@@ -151,9 +120,11 @@ public class ResponseValidator {
     /**
      * Asserts that the JSON array at {@code fieldPath} has exactly {@code expectedSize} elements.
      *
-     * @param fieldPath    the JsonPath expression pointing to an array
-     * @param expectedSize the expected number of elements
-     * @return this instance for chaining
+     * @param fieldPath    a JsonPath expression for the array
+     * @param expectedSize the expected element count
+     * @return this instance for method chaining
+     * @throws AssertionError if the list size differs from {@code expectedSize}
+     * @see AssertionUtils#assertListSize(Response, String, int)
      */
     public ResponseValidator listSize(String fieldPath, int expectedSize) {
         AssertionUtils.assertListSize(response, fieldPath, expectedSize);
@@ -161,10 +132,12 @@ public class ResponseValidator {
     }
 
     /**
-     * Asserts that the response time is less than {@code maxTimeMs} milliseconds.
+     * Asserts that the response time is strictly below {@code maxTimeMs} milliseconds.
      *
-     * @param maxTimeMs maximum acceptable response time in milliseconds
-     * @return this instance for chaining
+     * @param maxTimeMs the maximum acceptable response time in milliseconds
+     * @return this instance for method chaining
+     * @throws AssertionError if the actual response time is {@code >= maxTimeMs}
+     * @see AssertionUtils#assertResponseTimeBelow(Response, long)
      */
     public ResponseValidator responseTimeBelow(long maxTimeMs) {
         AssertionUtils.assertResponseTimeBelow(response, maxTimeMs);
@@ -172,10 +145,12 @@ public class ResponseValidator {
     }
 
     /**
-     * Asserts that the response {@code Content-Type} header contains {@code expectedContentType}.
+     * Asserts that the {@code Content-Type} header contains {@code expectedContentType}.
      *
-     * @param expectedContentType the content-type substring to look for
-     * @return this instance for chaining
+     * @param expectedContentType the MIME type substring to check for
+     * @return this instance for method chaining
+     * @throws AssertionError if the Content-Type does not contain the expected value
+     * @see AssertionUtils#assertContentType(Response, String)
      */
     public ResponseValidator contentType(String expectedContentType) {
         AssertionUtils.assertContentType(response, expectedContentType);
@@ -183,9 +158,11 @@ public class ResponseValidator {
     }
 
     /**
-     * Asserts that the GraphQL response body contains no {@code "errors"} field.
+     * Asserts that the GraphQL response body does not contain an {@code errors} field.
      *
-     * @return this instance for chaining
+     * @return this instance for method chaining
+     * @throws AssertionError if the response contains a GraphQL {@code errors} field
+     * @see AssertionUtils#assertGraphQLNoErrors(Response)
      */
     public ResponseValidator noGraphQLErrors() {
         AssertionUtils.assertGraphQLNoErrors(response);
@@ -193,37 +170,35 @@ public class ResponseValidator {
     }
 
     /**
-     * Asserts that the GraphQL response body has a non-null value at {@code "data.<dataField>"}.
+     * Asserts that the GraphQL response body has a non-null value at {@code data.<dataField>}.
      *
-     * @param dataField the field name under {@code "data"} to check
-     * @return this instance for chaining
+     * @param dataField the sub-field within {@code data} to check (e.g. {@code "rockets"})
+     * @return this instance for method chaining
+     * @throws AssertionError if {@code data.<dataField>} is absent or {@code null}
+     * @see AssertionUtils#assertGraphQLHasData(Response, String)
      */
     public ResponseValidator graphQLDataNotNull(String dataField) {
         AssertionUtils.assertGraphQLHasData(response, dataField);
         return this;
     }
 
-    // -------------------------------------------------------------------------
-    // Extraction helpers
-    // -------------------------------------------------------------------------
-
     /**
-     * Deserialises the response body to an instance of {@code clazz}.
+     * Deserialises the response body into an instance of {@code clazz}.
      *
      * @param <T>   the target type
-     * @param clazz the class to deserialise to
-     * @return the deserialised object
+     * @param clazz the class to deserialise into
+     * @return the deserialised response body (may be {@code null} if the body is empty)
      */
     public <T> T extractAs(Class<T> clazz) {
         return response.as(clazz);
     }
 
     /**
-     * Deserialises the response body as an array and wraps it in an unmodifiable {@link List}.
+     * Deserialises the response body (a JSON array) into an immutable {@link List}.
      *
      * @param <T>   the element type
-     * @param clazz the array class (e.g. {@code PostResponse[].class})
-     * @return an unmodifiable list of deserialised elements
+     * @param clazz the array class of the element type (e.g. {@code PostResponse[].class})
+     * @return an immutable list of deserialised elements
      */
     public <T> List<T> extractListAs(Class<T[]> clazz) {
         T[] array = response.as(clazz);
@@ -231,53 +206,56 @@ public class ResponseValidator {
     }
 
     /**
-     * Extracts the value at {@code path} as a {@link String}.
+     * Extracts the string value at the given JsonPath expression.
      *
-     * @param path the JsonPath expression
-     * @return the string value, or {@code null} if absent
+     * @param path a JsonPath expression (e.g. {@code "data.company.name"})
+     * @return the string value, or {@code null} if the path does not match
      */
     public String extractString(String path) {
         return response.jsonPath().getString(path);
     }
 
     /**
-     * Extracts the value at {@code path} as an {@link Integer}.
+     * Extracts the integer value at the given JsonPath expression.
      *
-     * @param path the JsonPath expression
-     * @return the integer value, or {@code null} if absent
+     * @param path a JsonPath expression (e.g. {@code "id"})
+     * @return the integer value, or {@code null} if the path does not match
      */
     public Integer extractInt(String path) {
         return response.jsonPath().getInt(path);
     }
 
     /**
-     * Extracts the value at {@code path} as a list of maps.
+     * Extracts a list of maps from the given JsonPath expression.
      *
-     * @param path the JsonPath expression pointing to an array of objects
-     * @return the extracted list, or an empty list if absent
+     * <p>Useful for accessing arrays of objects in the response body.</p>
+     *
+     * @param path a JsonPath expression pointing to a JSON array of objects
+     * @return a list of maps representing each object, or {@code null} if the path does not match
      */
     public List<Map<String, Object>> extractList(String path) {
         return response.jsonPath().getList(path);
     }
 
     /**
-     * Returns the underlying {@link Response} being validated.
+     * Returns the underlying REST-Assured {@link Response} for low-level access.
      *
-     * @return the wrapped response
+     * @return the wrapped response (never {@code null})
      */
     public Response getResponse() {
         return response;
     }
 
     /**
-     * Logs the response status code, response time, and (at DEBUG level) the full body.
+     * Logs a summary of the response status code, response time, and body at the
+     * appropriate log levels.
      *
-     * @return this instance for chaining
+     * <p>Status code and time are logged at INFO; the body is logged at DEBUG to
+     * avoid flooding production log output.</p>
      */
-    public ResponseValidator logResponse() {
+    public void logResponse() {
         logger.info("Response Status: {}", response.getStatusCode());
         logger.info("Response Time: {}ms", response.getTime());
         logger.debug("Response Body: {}", response.getBody().asString());
-        return this;
     }
 }

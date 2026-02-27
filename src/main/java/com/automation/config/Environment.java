@@ -1,17 +1,20 @@
 package com.automation.config;
 
 /**
- * Enumeration of deployment environments supported by the framework.
+ * Enumeration of the supported deployment environments for the automation framework.
  *
- * <p>The active environment is selected at runtime via the {@code -Denv} system property.
- * {@link ConfigurationManager} uses this enum to load the appropriate properties file.
+ * <p>Each constant carries a lower-case string label that matches the {@code env}
+ * JVM system property used by {@link ConfigurationManager} to select the correct
+ * environment-specific properties file (e.g. {@code application-dev.properties}).</p>
  *
- * <p>Example usage:
+ * <p>Usage example:</p>
  * <pre>{@code
  * Environment env = Environment.fromString(System.getProperty("env", "dev"));
  * System.out.println(env.getValue()); // "dev"
  * }</pre>
  *
+ * @author api-automation-framework
+ * @version 1.0.0
  * @see ConfigurationManager
  */
 public enum Environment {
@@ -19,39 +22,41 @@ public enum Environment {
     /** Local development environment. */
     DEV("dev"),
 
-    /** Pre-production staging environment. */
+    /** Pre-production / staging environment. */
     STAGING("staging"),
 
-    /** Live production environment. */
+    /** Production environment. */
     PROD("prod");
 
-    /** The string value used in property file names and system properties. */
+    /** Lower-case string label used in property-file names and system properties. */
     private final String value;
 
     /**
-     * Constructs an {@code Environment} with the given string identifier.
+     * Constructs an {@code Environment} constant with the given string label.
      *
-     * @param value the lowercase environment identifier
+     * @param value the lower-case environment label (e.g. {@code "dev"})
      */
     Environment(String value) {
         this.value = value;
     }
 
     /**
-     * Returns the lowercase string identifier for this environment.
+     * Returns the lower-case string label of this environment.
      *
-     * @return the environment value (e.g. {@code "dev"}, {@code "staging"}, {@code "prod"})
+     * @return the environment label (e.g. {@code "dev"}, {@code "staging"}, {@code "prod"})
      */
     public String getValue() {
         return value;
     }
 
     /**
-     * Returns the {@code Environment} whose value matches the given string,
-     * ignoring case. Falls back to {@link #DEV} if no match is found.
+     * Resolves an {@code Environment} constant from a string label, ignoring case.
      *
-     * @param env the environment string to match
-     * @return the matching {@code Environment}, or {@link #DEV} as default
+     * <p>If no constant matches {@code env}, {@link #DEV} is returned as the safe
+     * default.</p>
+     *
+     * @param env the string label to look up (may be {@code null}; treated as no-match)
+     * @return the matching {@code Environment} constant, or {@link #DEV} if not found
      */
     public static Environment fromString(String env) {
         for (Environment e : values()) {
