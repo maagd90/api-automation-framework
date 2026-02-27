@@ -77,9 +77,9 @@ public class RestApiClient {
                 .setContentType(ContentType.JSON)
                 .setAccept(ContentType.JSON)
                 .setConfig(RestAssured.config()
-                        .httpClient(io.restassured.config.HttpClientConfig.httpClientConfig()
-                                .setParam("http.connection.timeout", config.getConnectionTimeout())
-                                .setParam("http.socket.timeout", config.getReadTimeout())))
+                        .httpConfig(io.restassured.config.HttpConfig.httpConfig()
+                                .connectionTimeout(config.getConnectionTimeout())
+                                .socketTimeout(config.getReadTimeout())))
                 .log(io.restassured.filter.log.LogDetail.METHOD)
                 .log(io.restassured.filter.log.LogDetail.URI)
                 .build();
