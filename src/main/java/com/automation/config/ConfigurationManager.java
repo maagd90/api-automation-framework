@@ -37,4 +37,16 @@ package com.automation.config;
  public String getProperty(String key, String defaultValue) {
  return properties.getProperty(key, defaultValue);
  }
+ public String getBaseUrl() {
+ return properties.getProperty("api.base.url", "https://jsonplaceholder.typicode.com");
+ }
+ public String getGraphQLUrl() {
+ return properties.getProperty("graphql.base.url", "https://spacex-production.up.railway.app/");
+ }
+ public int getConnectionTimeout() {
+ return Integer.parseInt(properties.getProperty("api.connection.timeout", "5000"));
+ }
+ public int getReadTimeout() {
+ return Integer.parseInt(properties.getProperty("api.read.timeout", "10000"));
+ }
  }

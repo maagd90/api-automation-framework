@@ -1,0 +1,32 @@
+[
+  {
+    "name": "REST API Failures",
+    "messageRegex": ".*REST.*|.*HTTP.*|.*status code.*",
+    "matchedStatuses": ["failed"],
+    "flaky": false
+  },
+  {
+    "name": "GraphQL Failures",
+    "messageRegex": ".*GraphQL.*|.*graphql.*",
+    "matchedStatuses": ["failed"],
+    "flaky": false
+  },
+  {
+    "name": "Timeout Failures",
+    "messageRegex": ".*timeout.*|.*Timeout.*|.*timed out.*",
+    "matchedStatuses": ["failed", "broken"],
+    "flaky": false
+  },
+  {
+    "name": "Test Defects",
+    "messageRegex": ".*AssertionError.*|.*assertion.*",
+    "matchedStatuses": ["failed"],
+    "flaky": false
+  },
+  {
+    "name": "Infrastructure Issues",
+    "messageRegex": ".*Connection.*|.*connection refused.*|.*UnknownHost.*",
+    "matchedStatuses": ["broken"],
+    "flaky": false
+  }
+]

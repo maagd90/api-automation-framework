@@ -1,5 +1,7 @@
 package com.automation.constants;
 
+import com.automation.config.ConfigurationManager;
+
 /**
  * Compile-time constants for the GraphQL testing module.
  *

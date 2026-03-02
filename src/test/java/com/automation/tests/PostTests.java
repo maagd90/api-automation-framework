@@ -1,4 +1,7 @@
+package com.automation.tests;
+
 import io.qameta.allure.*;
+import org.testng.annotations.Test;
 
 @Epic("API Automation Framework")
 @Feature("Post Tests")
