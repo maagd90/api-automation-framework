@@ -10,6 +10,8 @@ import org.testng.ITestListener;
 import org.testng.ITestResult;
 
 import java.io.ByteArrayInputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
@@ -95,7 +97,9 @@ public class AllureListener implements ITestListener {
         logger.error("Allure Listener: ✗ FAILED: {}", testName);
         Throwable throwable = result.getThrowable();
         if (throwable != null) {
-            String failureDetails = throwable.getMessage() != null ? throwable.getMessage() : "Unknown error";
+            StringWriter sw = new StringWriter();
+            throwable.printStackTrace(new PrintWriter(sw));
+            String failureDetails = sw.toString();
             Allure.addAttachment("Failure Details", "text/plain",
                     new ByteArrayInputStream(failureDetails.getBytes(StandardCharsets.UTF_8)),
                     ".txt");
