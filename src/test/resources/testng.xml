@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<suite name="API Automation Framework" parallel="methods" thread-count="3" verbose="1">
 <suite name="API Automation Test Suite" verbose="1" parallel="false">
 
     <listeners>
@@ -7,7 +6,6 @@
     </listeners>
 
     <test name="REST API Tests" preserve-order="true">
-    <test name="REST API Tests">
         <classes>
             <class name="com.automation.api.tests.PostTests"/>
             <class name="com.automation.api.tests.UserTests"/>
@@ -15,7 +13,6 @@
     </test>
 
     <test name="GraphQL Tests" preserve-order="true">
-    <test name="GraphQL Tests">
         <classes>
             <class name="com.automation.graphql.tests.SpaceXTests"/>
         </classes>
